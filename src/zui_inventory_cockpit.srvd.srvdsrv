@@ -1,0 +1,8 @@
+@EndUserText.label: 'Cockpit de Inventário'
+define service ZUI_INVENTORY_COCKPIT {
+  expose ZC_MM_CE_INVENTORY_HEAD;
+  expose ZC_MM_CE_INVENTORY_HEAD_INFO;
+  expose ZC_MM_CE_INVENTORY_ITEM;
+  expose ZC_MM_CE_INVENTORY_LOG;
+  expose ZI_MM_CE_VH_MATERIAL;
+}

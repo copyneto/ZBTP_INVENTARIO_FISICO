@@ -1,0 +1,22 @@
+projection;
+strict ( 2 );
+
+define behavior for ZC_MM_INVENTORY_HEAD alias _Head
+{
+  use create;
+  use update;
+  use delete;
+
+  use action cancelar;
+  use action liberar;
+
+  use association _Item { create; }
+}
+
+define behavior for ZC_MM_INVENTORY_ITEM alias _Item
+{
+  use update;
+  use delete;
+
+  use association _Head;
+}

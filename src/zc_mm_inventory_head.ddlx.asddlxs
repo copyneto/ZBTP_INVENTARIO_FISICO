@@ -1,0 +1,268 @@
+@Metadata.layer: #CORE
+@UI.headerInfo.typeName: 'Cockpit de Inventário'
+@UI.headerInfo.typeNamePlural: 'Cockpit de Inventário'
+@UI.headerInfo.title.type: #STANDARD
+@UI.headerInfo.title.value: 'Description'
+
+@UI.lineItem: [{criticality: 'StatusCrit'}]
+
+@UI.presentationVariant: [{sortOrder: [{by: 'DocumentNo', direction: #DESC }]}]
+
+annotate view ZC_MM_INVENTORY_HEAD with
+{
+  // ------------------------------------------------------
+  // Header information
+  // ------------------------------------------------------
+
+  @UI.facet                 : [ { id            : 'DataPointCountId',
+                                 purpose        : #HEADER,
+                                 type           : #DATAPOINT_REFERENCE,
+                                 targetQualifier: 'DataPointCountId',
+                                 position       : 10 },
+
+                               { id             : 'DataPointStatusId',
+                                 purpose        : #HEADER,
+                                 type           : #DATAPOINT_REFERENCE,
+                                 targetQualifier: 'DataPointStatusId',
+                                 position       : 20 },
+
+                               { id             : 'Dados',
+                                 purpose        : #STANDARD,
+                                 type           : #COLLECTION,
+                                 label          : 'Dados Gerais',
+                                 position       : 10 },
+
+                               { id             : 'DadosGeral',
+                                 purpose        : #STANDARD,
+                                 label          : 'Dados Gerais',
+                                 parentId       : 'Dados',
+                                 type           : #FIELDGROUP_REFERENCE,
+                                 targetQualifier: 'DadosGeral',
+                                 position       : 20 },
+
+                               { id             : 'DadosRegistro',
+                                 purpose        : #STANDARD,
+                                 label          : 'Dados de Modificação',
+                                 parentId       : 'Dados',
+                                 type           : #FIELDGROUP_REFERENCE,
+                                 targetQualifier: 'DadosRegistro',
+                                 position       : 40 },
+
+                               { id             : 'Itens',
+                                 purpose        : #STANDARD,
+                                 type           : #LINEITEM_REFERENCE,
+                                 label          : 'Itens',
+                                 position       : 50,
+                                 targetElement  : '_Item'}
+              ]
+
+  // ------------------------------------------------------
+  //Button information
+  // ------------------------------------------------------
+  @UI.lineItem              : [{ position: 10, type: #FOR_ACTION, dataAction: 'liberar', label: 'Liberar' },
+                               { position: 20, type: #FOR_ACTION, dataAction: 'cancelar', label: 'Encerrar' }]
+
+  @UI.identification        : [{ position: 10, type: #FOR_ACTION, dataAction: 'liberar', label: 'Liberar' },
+                               { position: 20, type: #FOR_ACTION, dataAction: 'cancelar', label: 'Encerrar' }]
+
+      // ------------------------------------------------------
+      // Field information
+      // ------------------------------------------------------
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'ID do documento'
+  DocumentId;
+
+  @UI.selectionField        : [{ position: 10 }]
+  @UI.lineItem              : [{ position: 10 }]
+  @UI.fieldGroup            : [{ position: 10, qualifier: 'DadosGeral' }]
+
+  @EndUserText.label        : 'Número do documento'
+  DocumentNo;
+
+  @UI.selectionField        : [{ position: 20 }]
+  @UI.lineItem              : [{ position: 20 }]
+  @UI.fieldGroup            : [{ position: 20, qualifier: 'DadosGeral' }]
+  @UI.dataPoint             : { qualifier: 'DataPointCountId', title: 'Id contagem' }
+
+  @EndUserText.label        : 'ID da contagem'
+  CountId;
+
+  @UI.selectionField        : [{ position: 30 }]
+  @UI.lineItem              : [{ position: 30 }]
+  @UI.fieldGroup            : [{ position: 30, qualifier: 'DadosGeral' }]
+
+  @EndUserText.label        : 'Data da contagem'
+  CountDate;
+
+  @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_VH_INVENTORY_STATUS', element: 'Status' },
+                                       qualifier: 'ZI_MM_VH_INVENTORY_STATUS', useForValidation: true  }]
+
+  @UI.selectionField        : [{ position: 40 } ]
+  @UI.lineItem              : [{ position: 40, criticality: 'StatusCrit' } ]
+  @UI.fieldGroup            : [{ position: 40, qualifier: 'DadosGeral' }]
+  @UI.dataPoint             : { qualifier: 'DataPointStatusId', title: 'Status', criticality: 'StatusCrit' }
+
+  @EndUserText.label        : 'Status'
+  StatusId;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'Descrição do Status'
+  StatusText;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'Criticalidade do Status'
+  StatusCrit;
+
+  @UI.selectionField        : [{ position: 45 }]
+  @UI.lineItem              : [{ position: 45 }]
+  @UI.fieldGroup            : [{ position: 30, qualifier: 'DadosGeral' }]
+
+  @EndUserText.label        : 'Centro'
+  Plant;
+
+  @UI.hidden                : true
+  @EndUserText.label        : 'Nome do centro'
+  PlantName;
+
+//  @UI.selectionField        : [{ position: 110 }]
+//  @UI.lineItem              : [{ position: 110 }]
+//  @UI.fieldGroup            : [{ position: 90, qualifier: 'DadosGeral' }]
+//
+//  @EndUserText.label        : 'Documento do material (Ano)'
+//  MaterialDocumentYear;
+//
+//  @EndUserText.label        : 'Documento do material'
+//  MaterialDocument;
+//
+//  @UI.selectionField        : [{ position: 100 }]
+//  @UI.lineItem              : [{ position: 100 }]
+//  @UI.fieldGroup            : [{ position: 80, qualifier: 'DadosGeral' }]
+//
+//  @EndUserText.label        : 'Data de lançamento'
+//  PostingDate;
+//
+//  @UI.selectionField        : [{ position: 120 }]
+//  @UI.lineItem              : [{ position: 120 }]
+//  @UI.fieldGroup            : [{ position: 100, qualifier: 'DadosGeral' }]
+//
+//  @EndUserText.label        : 'Nº Doc. Entrada Saída'
+//  BR_NotaFiscal;
+//
+//  @UI.selectionField        : [{ position: 130 }]
+//  @UI.lineItem              : [{ position: 130 }]
+//  @UI.fieldGroup            : [{ position: 110, qualifier: 'DadosGeral' }]
+//
+//  @EndUserText.label        : 'N° Doc. Contabilização'
+//  SupplierInvoice;
+//
+//  @EndUserText.label        : 'N° Doc. Contabilização (Ano)'
+//  SupplierInvoiceYear;
+//
+//  @UI.selectionField        : [{ position: 200 }]
+//  @UI.lineItem              : [{ position: 200 }]
+//  @UI.fieldGroup            : [{ position: 170, qualifier: 'DadosGeral' }]
+//
+//  @EndUserText.label        : 'Doc Contabilização Est.'
+//  InvoiceReference;
+//
+//  @UI.selectionField        : [{ position: 190 }]
+//  @UI.lineItem              : [{ position: 190 }]
+//  @UI.fieldGroup            : [{ position: 160, qualifier: 'DadosGeral' }]
+//
+//  @EndUserText.label        : 'Data Doc. Contabilização'
+//  DocumentDate;
+//
+//  @UI.selectionField        : [{ position: 160 }]
+//  @UI.lineItem              : [{ position: 160 }]
+//  @UI.fieldGroup            : [{ position: 140, qualifier: 'DadosGeral' }]
+//
+//  @EndUserText.label        : 'Número NF-e'
+//  BR_NFeNumber;
+//
+//  @UI.selectionField        : [{ position: 170 }]
+//  @UI.lineItem              : [{ position: 170 }]
+//  @UI.fieldGroup            : [{ position: 150, qualifier: 'DadosGeral' }]
+//
+//  @EndUserText.label        : 'Nota fiscal cancelada'
+//  BR_NFIsCanceled;
+//
+//  @UI.selectionField        : [{ position: 180 }]
+//  @UI.lineItem              : [{ position: 180 }]
+//  @UI.fieldGroup            : [{ position: 150, qualifier: 'DadosGeral' }]
+//
+//  @EndUserText.label        : 'Status NFe'
+//  BR_NFeDocumentStatus;
+//
+//  @UI.hidden                : true
+//  @EndUserText.label        : 'Descrição Status NFe'
+//  BR_NFeDocumentStatusText;
+//
+//  @UI.selectionField        : [{ position: 150 }]
+//  @UI.lineItem              : [{ position: 150 }]
+//  @UI.fieldGroup            : [{ position: 130, qualifier: 'DadosGeral' }]
+//
+//  @EndUserText.label        : 'Empresa'
+//  CompanyCode;
+//
+//  @UI.hidden                : true
+//  @EndUserText.label        : 'Nome da Empresa'
+//  CompanyCodeName;
+//
+//  @UI.selectionField        : [{ position: 140 }]
+//  @UI.lineItem              : [{ position: 140 }]
+//  @UI.fieldGroup            : [{ position: 120, qualifier: 'DadosGeral' }]
+//
+//  @EndUserText.label        : 'Documento do inventário físico'
+//  PhysicalInventoryDocument;
+//
+//  @UI.selectionField        : [{ position: 210 }]
+//  @UI.lineItem              : [{ position: 210 }]
+//  @UI.fieldGroup            : [{ position: 180, qualifier: 'DadosGeral' }]
+//
+//  @EndUserText.label        : 'Documento do inventário físico (Ano)'
+//  FiscalYear;
+//
+//  @UI.selectionField        : [{ position: 220 }]
+//  @UI.lineItem              : [{ position: 220 }]
+//  @UI.fieldGroup            : [{ position: 190, qualifier: 'DadosGeral' }]
+//
+//  @EndUserText.label        : 'Referência Externa'
+//  ExternalReference;
+
+  @UI.multiLineText         : true
+  @UI.lineItem              : [{ position: 70 } ]
+  @UI.fieldGroup            : [{ position: 70, qualifier: 'DadosGeral' }]
+
+  @EndUserText.label        : 'Descrição'
+  Description;
+
+  @UI.fieldGroup            : [{ position: 10, qualifier: 'DadosRegistro' }]
+
+  @EndUserText.label        : 'Criado por'
+  CreatedBy;
+
+  @UI.fieldGroup            : [{ position: 20, qualifier: 'DadosRegistro' }]
+
+  @EndUserText.label        : 'Criado em'
+  CreatedAt;
+
+  @UI.fieldGroup            : [{ position: 30, qualifier: 'DadosRegistro' }]
+
+  @EndUserText.label        : 'Modificado por'
+  LastChangedBy;
+
+  @UI.fieldGroup            : [{ position: 40, qualifier: 'DadosRegistro' }]
+
+  @EndUserText.label        : 'Modificado em'
+  LastChangedAt;
+
+  @UI.fieldGroup            : [{ position: 50, qualifier: 'DadosRegistro' }]
+
+  @EndUserText.label        : 'Registro'
+  LocalLastChangedAt;
+
+}

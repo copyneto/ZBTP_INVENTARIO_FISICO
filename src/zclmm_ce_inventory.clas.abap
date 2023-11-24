@@ -1,0 +1,5 @@
+CLASS zclmm_ce_inventory DEFINITION PUBLIC ABSTRACT FINAL FOR BEHAVIOR OF zc_mm_ce_inventory_head.
+ENDCLASS.
+
+CLASS zclmm_ce_inventory IMPLEMENTATION.
+ENDCLASS.

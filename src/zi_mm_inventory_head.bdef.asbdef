@@ -1,0 +1,108 @@
+managed;
+strict ( 2 );
+
+define behavior for ZI_MM_INVENTORY_HEAD alias _Head
+implementation in class zclmm_inventory_head unique
+persistent table ztmm_inventory_h
+lock master
+authorization master ( instance )
+etag master LastChangedAt
+{
+  create;
+  update ( features : instance );
+  delete ( features : instance );
+
+  association _Item { create ( features : instance ); }
+
+  action ( features : instance ) cancelar;
+  action ( features : instance ) liberar;
+
+  side effects
+  {
+    action cancelar affects field *;
+    action liberar affects field *;
+  }
+
+  field ( numbering : managed, readonly : update )
+  Documentid;
+
+  field ( readonly )
+  StatusId,
+  DocumentNo,
+  CountId,
+  CountDate,
+  //  Accuracy,
+  LastChangedAt,
+  LastChangedBy, CreatedAt, CreatedBy,
+  LocalLastChangedAt;
+
+
+  mapping for ztmm_inventory_h
+    {
+      Documentid         = documentid;
+      Documentno         = documentno;
+      Countid            = countid;
+      CountDate          = countdate;
+      StatusId           = statusid;
+      StatusText         = statustext;
+      Plant              = plant;
+      PlantName          = PlantName;
+      Description        = description;
+      CreatedBy          = createdby;
+      CreatedAt          = createdat;
+      LastChangedBy      = LastChangedBy;
+      LastChangedAt      = LastChangedAt;
+      LocalLastChangedAt = LocalLastChangedAt;
+    }
+}
+
+define behavior for ZI_MM_INVENTORY_ITEM alias _Item
+implementation in class zclmm_inventory_item unique
+persistent table ztmm_inventory_i
+lock dependent by _Head
+authorization dependent by _Head
+etag master LastChangedAt
+{
+  update ( features : instance );
+  delete ( features : instance );
+  association _Head;
+
+  determination updatedata on save { field Storagelocation, Batch, Quantitycount; }
+
+  field ( readonly : update ) DocumentId;
+  field ( numbering : managed, readonly : update ) DocumentItemId;
+
+  mapping for ztmm_inventory_i
+    {
+      DocumentId                = DocumentId;
+      DocumentItemId            = DocumentItemId;
+      Material                  = Material;
+      Plant                     = Plant;
+      Storagelocation           = Storagelocation;
+      StorageLocationName       = StorageLocationName;
+      Batch                     = Batch;
+      Quantitystock             = Quantitystock;
+      Quantitycount             = Quantitycount;
+      Quantitycurrent           = Quantitycurrent;
+      Balance                   = Balance;
+      Balancecurrent            = Balancecurrent;
+      Unit                      = Unit;
+      Pricestock                = Pricestock;
+      Pricecount                = Pricecount;
+      Pricediff                 = Pricediff;
+      Currency                  = Currency;
+      Weight                    = Weight;
+      Weightunit                = Weightunit;
+      Accuracy                  = Accuracy;
+      PhysicalInventoryDocument = PhysicalInventoryDocument;
+      Fiscalyear                = Fiscalyear;
+      StatusId                  = StatusId;
+      StatusText                = StatusText;
+      CreatedBy                 = CreatedBy;
+      CreatedAt                 = CreatedAt;
+      LastChangedBy             = LastChangedBy;
+      LastChangedAt             = LastChangedAt;
+      LocalLastChangedAt        = LocalLastChangedAt;
+    }
+
+}
