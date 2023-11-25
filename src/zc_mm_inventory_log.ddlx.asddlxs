@@ -1,0 +1,101 @@
+@Metadata.layer: #CORE
+@UI.headerInfo.typeName: 'Mensagem'
+@UI.headerInfo.typeNamePlural: 'Mensagens'
+@UI.headerInfo.title.type: #STANDARD
+
+@UI.lineItem: [{criticality: 'MsgtyCrit'}]
+
+@UI.presentationVariant: [{sortOrder: [{by: 'Line', direction: #DESC }]}]
+
+annotate view ZC_MM_INVENTORY_LOG with
+{
+  // ------------------------------------------------------
+  // Header information
+  // ------------------------------------------------------
+
+  @UI.facet          : [ { id           : 'Log',
+                           purpose      : #STANDARD,
+                           type         : #IDENTIFICATION_REFERENCE,
+                           position     : 10 },
+
+                         { id           : 'Header',
+                           purpose      : #STANDARD,
+                           type         : #LINEITEM_REFERENCE,
+                           position     : 20,
+                           targetElement: '_Head'}]
+
+  // ------------------------------------------------------
+  // Field information
+  // ------------------------------------------------------
+
+  @UI.hidden         : true
+
+  @EndUserText.label : 'ID do documento'
+  DocumentId;
+
+  @UI.lineItem       : [{ position: 10 }]
+  @UI.identification : [{ position: 10 }]
+
+  @EndUserText.label : 'Linha'
+  Line;
+
+  @EndUserText.label : 'Classe de mensagem'
+  Msgid;
+
+  @UI.lineItem       : [{ position: 20 }]
+  @UI.identification : [{ position: 20 }]
+
+  @EndUserText.label : 'Tipo de mensagem'
+  Msgty;
+
+  @UI.hidden         : true
+
+  @EndUserText.label : 'Descrição Tipo de mensagem'
+  MsgtyText;
+
+  @UI.hidden         : true
+
+  @EndUserText.label : 'Criticalidade Tipo de mensagem'
+  MsgtyCrit;
+
+  @EndUserText.label : 'Número da mensagem'
+  Msgno;
+
+  @EndUserText.label : 'Variável 1 da mensagem'
+  Msgv1;
+
+  @EndUserText.label : 'Variável 2 da mensagem'
+  Msgv2;
+
+  @EndUserText.label : 'Variável 3 da mensagem'
+  Msgv3;
+
+  @EndUserText.label : 'Variável 4 da mensagem'
+  Msgv4;
+
+  @UI.lineItem       : [{ position: 30 }]
+  @UI.identification : [{ position: 30 }]
+
+  @EndUserText.label : 'Mensagem'
+  Message;
+
+  @EndUserText.label : 'Criado por'
+  CreatedBy;
+
+  @EndUserText.label : 'Criado em'
+  CreatedAt;
+
+  @EndUserText.label : 'Modificado por'
+  LastChangedBy;
+
+  @EndUserText.label : 'Modificado em'
+  LastChangedAt;
+
+  @UI.lineItem       : [{ position: 40 }]
+  @UI.identification : [{ position: 40 }]
+
+  @EndUserText.label : 'Registro'
+  LocalLastChangedAt;
+
+
+}

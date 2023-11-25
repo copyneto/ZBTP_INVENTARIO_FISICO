@@ -1,4 +1,4 @@
-CLASS z_s41_rfc_inventory_release DEFINITION
+CLASS z_s41_rfc_inventory_close DEFINITION
   PUBLIC
   CREATE PUBLIC .
 
@@ -89,7 +89,7 @@ CLASS z_s41_rfc_inventory_release DEFINITION
         !destination TYPE REF TO if_rfc_dest
       RAISING
         cx_rfc_dest_provider_error .
-    METHODS zfmmm_inventory_release
+    METHODS zfmmm_inventory_close
       IMPORTING
         !is_head TYPE zsmm_inventory_head
         !it_item TYPE zctgmm_inventory_item
@@ -110,7 +110,7 @@ ENDCLASS.
 
 
 
-CLASS Z_S41_RFC_INVENTORY_RELEASE IMPLEMENTATION.
+CLASS Z_S41_RFC_INVENTORY_CLOSE IMPLEMENTATION.
 
 
   METHOD constructor.
@@ -118,9 +118,9 @@ CLASS Z_S41_RFC_INVENTORY_RELEASE IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD zfmmm_inventory_release.
+  METHOD zfmmm_inventory_close.
     DATA: _rfc_message_ TYPE aco_proxy_msg_type.
-    CALL FUNCTION 'ZFMMM_INVENTORY_RELEASE' DESTINATION me->destination
+    CALL FUNCTION 'ZFMMM_INVENTORY_CLOSE' DESTINATION me->destination
       EXPORTING
         is_head               = is_head
         it_item               = it_item

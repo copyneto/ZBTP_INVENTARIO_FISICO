@@ -57,17 +57,6 @@ annotate view ZC_MM_INVENTORY_ITEM with
   @EndUserText.label        : 'Nome do Material'
   MaterialName;
 
-  @UI.lineItem              : [{ position: 20 }]
-  @UI.identification        : [{ position: 20 }]
-
-  @EndUserText.label        : 'Centro'
-  Plant;
-
-  @UI.hidden: true
-
-  @EndUserText.label        : 'Nome do Centro'
-  PlantName;
-
   @UI.lineItem              : [{ position: 30 }]
   @UI.identification        : [{ position: 30 }]
 

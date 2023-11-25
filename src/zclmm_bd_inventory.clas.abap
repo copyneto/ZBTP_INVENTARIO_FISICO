@@ -834,21 +834,34 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 * ---------------------------------------------------------------------
 * Cria documento de inventário, contagem e log via RFC
 * ---------------------------------------------------------------------
+*    CALL FUNCTION 'ZFMMM_INVENTORY'
+*      STARTING NEW TASK 'BACKGROUND' CALLING task_finish ON END OF TASK
+*      EXPORTING
+*        is_head     = CORRESPONDING #( ls_head )
+*        it_item     = CORRESPONDING #( lt_item )
+*        it_log      = CORRESPONDING #( lt_log )
+*      TABLES
+*        es_rfc_head = data(ls_rfc_head)
+*        et_rfc_item = data(lt_rfc_item)
+*        et_rfc_log  = data(lt_rfc_log).
+*
+*    WAIT FOR ASYNCHRONOUS TASKS UNTIL me->gt_return IS NOT INITIAL.
 
-      me->call_rfc_inventory_release( EXPORTING is_head     = CORRESPONDING #( ls_head )
-                                                it_item     = CORRESPONDING #( lt_item )
-                                                it_log      = CORRESPONDING #( lt_log )
-                                      IMPORTING es_rfc_head = DATA(ls_rfc_head)
-                                                et_rfc_item = DATA(lt_rfc_item)
-                                                et_rfc_log  = DATA(lt_rfc_log)
-                                                et_return   = et_return ).
+
+    me->call_rfc_inventory_release( EXPORTING is_head     = CORRESPONDING #( ls_head )
+                                              it_item     = CORRESPONDING #( lt_item )
+                                              it_log      = CORRESPONDING #( lt_log )
+                                    IMPORTING es_rfc_head = DATA(ls_rfc_head)
+                                              et_rfc_item = DATA(lt_rfc_item)
+                                              et_rfc_log  = DATA(lt_rfc_log)
+                                              et_return   = et_return ).
     CHECK et_return IS INITIAL.
 
-      me->prepare_commit( EXPORTING iv_update = abap_true
-                                    it_head   = VALUE #( ( CORRESPONDING #( ls_rfc_head ) ) )
-                                    it_item   = CORRESPONDING #( lt_rfc_item )
-                                    it_log    = CORRESPONDING #( lt_rfc_log )
-                          IMPORTING et_return = et_return ).
+    me->prepare_commit( EXPORTING iv_update = abap_true
+                                  it_head   = VALUE #( ( CORRESPONDING #( ls_rfc_head ) ) )
+                                  it_item   = CORRESPONDING #( lt_rfc_item )
+                                  it_log    = CORRESPONDING #( lt_rfc_log )
+                        IMPORTING et_return = et_return ).
 
   ENDMETHOD.
 
@@ -966,5 +979,4 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
       <fs_log>-line = sy-tabix + lv_seqnr.
     ENDLOOP.
   ENDMETHOD.
-
 ENDCLASS.

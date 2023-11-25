@@ -30,8 +30,6 @@ CLASS z_s41_rfc_inventory_get_info DEFINITION
         statuscrit                TYPE int1,
         material                  TYPE c LENGTH 000040,
         materialname              TYPE c LENGTH 000040,
-        plant                     TYPE c LENGTH 000004,
-        plantname                 TYPE c LENGTH 000030,
         storagelocation           TYPE c LENGTH 000004,
         storagelocationname       TYPE c LENGTH 000016,
         batch                     TYPE c LENGTH 000010,
@@ -152,7 +150,7 @@ ENDCLASS.
 
 
 
-CLASS z_s41_rfc_inventory_get_info IMPLEMENTATION.
+CLASS Z_S41_RFC_INVENTORY_GET_INFO IMPLEMENTATION.
 
 
   METHOD constructor.

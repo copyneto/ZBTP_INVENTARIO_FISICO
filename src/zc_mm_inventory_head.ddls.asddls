@@ -31,7 +31,8 @@ define root view entity ZC_MM_INVENTORY_HEAD
       LastChangedAt,
       @Semantics.systemDateTime.localInstanceLastChangedAt: true
       LocalLastChangedAt,
-      
+
       /* Associations */
-      _Item : redirected to composition child ZC_MM_INVENTORY_ITEM
+      _Item : redirected to composition child ZC_MM_INVENTORY_ITEM,
+      _Log  : redirected to composition child ZC_MM_INVENTORY_LOG
 }

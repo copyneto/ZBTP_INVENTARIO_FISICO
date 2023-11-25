@@ -36,13 +36,13 @@ authorization master ( instance )
   field ( mandatory )
   CountId,
   CountDate,
-  Description;
+  Description,
+  Plant,
+  PlantName;
 
   field ( readonly )
   DocumentId,
   DocumentNo,
-  Plant,
-  PlantName,
   StatusId,
   StatusText,
   StatusCrit,
@@ -86,6 +86,7 @@ lock dependent by _Head
 authorization dependent by _Head
 etag master LastChangedAt
 {
+  create;
   update ( features : instance );
   delete ( features : instance );
   association _Head; // with draft; }

@@ -11,7 +11,7 @@
 
 @UI.presentationVariant: [{sortOrder: [{by: 'Material', direction: #ASC }]}]
 
-@ObjectModel.semanticKey: ['Material', 'Plant' ]
+@ObjectModel.semanticKey: ['Material', 'StorageLocation', 'Batch' ]
 
 define custom entity ZC_MM_CE_INVENTORY_ITEM
 {
@@ -89,33 +89,11 @@ define custom entity ZC_MM_CE_INVENTORY_ITEM
       @EndUserText.label        : 'Nome do Material'
       MaterialName              : abap.char(40);
 
-      @UI.lineItem              : [{ position: 20 }]
-      @UI.identification        : [{ position: 20 }]
-
-      @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_PLANT', element: 'Plant' },
-                                           additionalBinding: [{ element: 'PlantName', localElement: 'PlantName' }],
-                                           qualifier: 'ZI_MM_CE_VH_PLANT', useForValidation: true  }]
-
-      @EndUserText.label        : 'Centro'
-      @ObjectModel.text.element : ['PlantName']
-      Plant                     : abap.char(4);
-
-      @UI.hidden                : true
-
-      @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_PLANT', element: 'PlantName' },
-                                           additionalBinding: [{ element: 'Plant', localElement: 'Plant' }],
-                                           qualifier: 'ZI_MM_CE_VH_PLANT', useForValidation: true  }]
-
-      @EndUserText.label        : 'Nome do Centro'
-      PlantName                 : abap.char(30);
-
       @UI.lineItem              : [{ position: 30 }]
       @UI.identification        : [{ position: 30 }]
 
       @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_STORAGE_LOCATION', element: 'StorageLocation' },
-                                           additionalBinding: [{ element: 'Plant', localElement: 'Plant' },
-                                                               { element: 'PlantName', localElement: 'PlantName' },
-                                                               { element: 'StorageLocationName', localElement: 'StorageLocationName' }],
+                                           additionalBinding: [{ element: 'StorageLocationName', localElement: 'StorageLocationName' }],
                                            qualifier: 'ZI_MM_CE_VH_STORAGE_LOCATION', useForValidation: true  }]
 
       @EndUserText.label        : 'Depósito'
@@ -125,9 +103,7 @@ define custom entity ZC_MM_CE_INVENTORY_ITEM
       @UI.hidden                : true
 
       @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_STORAGE_LOCATION', element: 'StorageLocationName' },
-                                           additionalBinding: [{ element: 'StorageLocation', localElement: 'StorageLocation' },
-                                                               { element: 'Plant', localElement: 'Plant' },
-                                                               { element: 'PlantName', localElement: 'PlantName' }],
+                                           additionalBinding: [{ element: 'StorageLocation', localElement: 'StorageLocation' }],
                                            qualifier: 'ZI_MM_CE_VH_STORAGE_LOCATION', useForValidation: true  }]
 
       @EndUserText.label        : 'Nome do Depósito'
@@ -138,9 +114,7 @@ define custom entity ZC_MM_CE_INVENTORY_ITEM
 
       @EndUserText.label        : 'Número do lote'
       @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_BATCH', element: 'Batch' },
-                                           additionalBinding: [{ element: 'Plant', localElement: 'Plant' },
-                                                               { element: 'PlantName', localElement: 'PlantName' },
-                                                               { element: 'Material', localElement: 'Material'},
+                                           additionalBinding: [{ element: 'Material', localElement: 'Material'},
                                                                { element: 'MaterialName', localElement: 'MaterialName'}],
                                            qualifier: 'ZI_MM_CE_VH_BATCH', useForValidation: true  }]
       Batch                     : abap.char(10);
@@ -162,7 +136,7 @@ define custom entity ZC_MM_CE_INVENTORY_ITEM
       @UI.hidden                : true
 
       @EndUserText.label        : 'Quantidade em Estoque (Criticalidade)'
-      QuantityStockCrit         : int1;
+      QuantityStockCrit         : abap.int1;
 
       @UI.lineItem              : [{ position: 60 }]
       @UI.identification        : [{ position: 60 }]
@@ -181,7 +155,7 @@ define custom entity ZC_MM_CE_INVENTORY_ITEM
       @UI.hidden                : true
 
       @EndUserText.label        : 'Quantidade estoque atual (Criticalidade)'
-      QuantityCurrentCrit       : int1;
+      QuantityCurrentCrit       : abap.int1;
 
       @UI.lineItem              : [{ position: 80 }]
       @UI.identification        : [{ position: 80 }]
@@ -245,18 +219,24 @@ define custom entity ZC_MM_CE_INVENTORY_ITEM
       @EndUserText.label        : 'Hierarquia de produtos'
       ProductHierarchy          : abap.char(18);
 
-      @UI.lineItem              : [{ position: 180, type:#AS_DATAPOINT }]
-      @UI.identification        : [{ position: 180, type:#AS_DATAPOINT }]
-      @UI.dataPoint             : { targetValue: 100, visualization: #PROGRESS }
+      @UI.lineItem              : [{ position: 180, type:#AS_DATAPOINT, criticality: 'AccuracyCrit', criticalityRepresentation: #WITHOUT_ICON }]
+      @UI.identification        : [{ position: 180, type:#AS_DATAPOINT, criticality: 'AccuracyCrit', criticalityRepresentation: #WITHOUT_ICON }]
+      @UI.dataPoint             : { targetValue: 100, visualization: #PROGRESS, criticality: 'AccuracyCrit', criticalityRepresentation: #WITHOUT_ICON }
 
       @EndUserText.label        : 'Acuracidade'
       Accuracy                  : abap.dec(13,2);
 
+      @UI.hidden                : true
+
+      @EndUserText.label        : 'Acuracidade (Criticalidade)'
+      AccuracyCrit              : abap.int1;
+
+      @UI.hidden                : true
+
       @EndUserText.label        : 'Documento do material (Ano)'
       MaterialDocumentYear      : abap.numc(4);
 
-      @UI.lineItem              : [{ position: 190 }]
-      @UI.identification        : [{ position: 190 }]
+      @UI.hidden                : true
 
       @EndUserText.label        : 'Documento do material'
       MaterialDocument          : abap.char(10);
@@ -267,35 +247,42 @@ define custom entity ZC_MM_CE_INVENTORY_ITEM
       @EndUserText.label        : 'Data de lançamento'
       PostingDate               : abap.dats;
 
-      @UI.lineItem              : [{ position: 210 }]
-      @UI.identification        : [{ position: 210 }]
+      @UI.hidden                : true
 
       @EndUserText.label        : 'Nº Doc. Entrada Saída'
       BR_NotaFiscal             : abap.numc(10);
 
-      @UI.lineItem              : [{ position: 220 }]
-      @UI.identification        : [{ position: 220 }]
+      @UI.hidden                : true
 
       @EndUserText.label        : 'N° Doc. Contabilização'
       AccountingDocument        : abap.char(10);
 
+      @UI.hidden                : true
+
       @EndUserText.label        : 'N° Doc. Contabilização (Ano)'
       AccountingDocumentYear    : abap.numc(4);
+
+      @UI.hidden                : true
 
       @EndUserText.label        : 'Doc Contabilização Est.'
       InvoiceReference          : abap.char(10);
 
-      @UI.lineItem              : [{ position: 230 }]
-      @UI.identification        : [{ position: 230 }]
+      @UI.hidden                : true
 
       @EndUserText.label        : 'Data Doc. Contabilização'
       DocumentDate              : abap.dats;
 
+      @UI.hidden                : true
+
       @EndUserText.label        : 'Número NF-e'
       BR_NFeNumber              : abap.char(9);
 
+      @UI.hidden                : true
+
       @EndUserText.label        : 'Nota fiscal cancelada'
       BR_NFIsCanceled           : abap.char(1);
+
+      @UI.hidden                : true
 
       @EndUserText.label        : 'Status NFe'
       @ObjectModel.text.element : ['BR_NFeDocumentStatusText']
@@ -327,6 +314,8 @@ define custom entity ZC_MM_CE_INVENTORY_ITEM
 
       @EndUserText.label        : 'Documento do inventário físico (Ano)'
       FiscalYear                : abap.numc(4);
+
+      @UI.hidden                : true
 
       @EndUserText.label        : 'Referência Externa'
       ExternalReference         : abap.char(40);

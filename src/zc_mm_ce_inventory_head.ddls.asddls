@@ -155,7 +155,7 @@ define root custom entity ZC_MM_CE_INVENTORY_HEAD
 
       @UI.selectionField : [{ position: 45 }]
       @UI.lineItem       : [{ position: 45 }]
-//      @UI.fieldGroup     : [{ position: 30, qualifier: 'DadosGeral' }]
+      @UI.fieldGroup     : [{ position: 30, qualifier: 'DadosGeral' }]
 
       @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_PLANT', element: 'Plant' },
                                            additionalBinding: [{ element: 'PlantName', localElement: 'PlantName' }],

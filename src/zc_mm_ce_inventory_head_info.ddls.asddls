@@ -69,7 +69,7 @@ define custom entity ZC_MM_CE_INVENTORY_HEAD_INFO
       @EndUserText.label : 'ID da contagem'
       CountId            : abap.char(40);
 
-      @UI.lineItem       : [{ position: 30 }]
+//      @UI.lineItem       : [{ position: 30 }]
       @UI.fieldGroup     : [{ position: 30, qualifier: 'DadosGeral' }]
 
       @EndUserText.label : 'Data da contagem'
@@ -80,8 +80,8 @@ define custom entity ZC_MM_CE_INVENTORY_HEAD_INFO
                                            additionalBinding: [{ element: 'StatusText', localElement: 'StatusText' }],
                                            qualifier: 'ZI_MM_VH_INVENTORY_STATUS', useForValidation: true  }]
 
-//      @UI.lineItem       : [{ position: 40, criticality: 'StatusCrit' } ]
-      @UI.fieldGroup     : [{ position: 40, qualifier: 'DadosGeral' }]
+      @UI.lineItem       : [{ position: 40, criticality: 'StatusCrit' } ]
+      @UI.fieldGroup     : [{ position: 40, criticality: 'StatusCrit', qualifier: 'DadosGeral' }]
       @UI.dataPoint      : { qualifier: 'DataPointStatusId', title: 'Status', criticality: 'StatusCrit' }
 
       @EndUserText.label : 'Status'
@@ -100,7 +100,7 @@ define custom entity ZC_MM_CE_INVENTORY_HEAD_INFO
       @EndUserText.label : 'Criticalidade do status'
       StatusCrit         : abap.int1;
 
-      @UI.lineItem       : [{ position: 45 }]
+//      @UI.lineItem       : [{ position: 45 }]
       @UI.fieldGroup     : [{ position: 30, qualifier: 'DadosGeral' }]
 
       @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_PLANT', element: 'Plant' },
@@ -126,26 +126,31 @@ define custom entity ZC_MM_CE_INVENTORY_HEAD_INFO
       @EndUserText.label : 'Observações'
       Description        : abap.char(80);
 
+      @UI.lineItem       : [{ position: 110 } ]
       @UI.fieldGroup     : [{ position: 10, qualifier: 'DadosRegistro' }]
 
       @EndUserText.label : 'Criado por'
       CreatedBy          : abap.char(12);
 
+      @UI.lineItem       : [{ position: 120 } ]
       @UI.fieldGroup     : [{ position: 20, qualifier: 'DadosRegistro' }]
 
       @EndUserText.label : 'Criado em'
       CreatedAt          : timestampl;
 
+      @UI.lineItem       : [{ position: 130 } ]
       @UI.fieldGroup     : [{ position: 30, qualifier: 'DadosRegistro' }]
 
       @EndUserText.label : 'Modificado por'
       LastChangedBy      : abap.char(12);
 
+      @UI.lineItem       : [{ position: 140 } ]
       @UI.fieldGroup     : [{ position: 40, qualifier: 'DadosRegistro' }]
 
       @EndUserText.label : 'Modificado em'
       LastChangedAt      : timestampl;
 
+      @UI.lineItem       : [{ position: 150 } ]
       @UI.fieldGroup     : [{ position: 50, qualifier: 'DadosRegistro' }]
 
       @EndUserText.label : 'Registro'

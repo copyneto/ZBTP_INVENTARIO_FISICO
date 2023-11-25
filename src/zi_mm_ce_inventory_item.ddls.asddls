@@ -27,8 +27,6 @@ define view entity ZI_MM_CE_INVENTORY_ITEM
 
       _Item.material                  as Material,
       _Item.materialname              as MaterialName,
-      _Item.plant                     as Plant,
-      _Item.plantname                 as PlantName,
       _Item.storagelocation           as StorageLocation,
       _Item.storagelocationname       as StorageLocationName,
       _Item.batch                     as Batch,

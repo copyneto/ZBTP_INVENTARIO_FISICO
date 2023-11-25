@@ -37,26 +37,24 @@ CLASS zclmm_ce_inventory_item DEFINITION
         StatusText                TYPE RANGE OF zc_mm_inventory_item-StatusText,
         Material                  TYPE RANGE OF zc_mm_inventory_item-Material,
         MaterialName              TYPE RANGE OF zc_mm_inventory_item-MaterialName,
-        Plant                     TYPE RANGE OF zc_mm_inventory_item-Plant,
-        PlantName                 TYPE RANGE OF zc_mm_inventory_item-PlantName,
         StorageLocation           TYPE RANGE OF zc_mm_inventory_item-StorageLocation,
         StorageLocationName       TYPE RANGE OF zc_mm_inventory_item-StorageLocationName,
         Batch                     TYPE RANGE OF zc_mm_inventory_item-Batch,
-        QuantityStock             TYPE RANGE OF zc_mm_inventory_item-QuantityStock,
+*        QuantityStock             TYPE RANGE OF zc_mm_inventory_item-QuantityStock,
         QuantityCount             TYPE RANGE OF zc_mm_inventory_item-QuantityCount,
-        QuantityCurrent           TYPE RANGE OF zc_mm_inventory_item-QuantityCurrent,
-        Balance                   TYPE RANGE OF zc_mm_inventory_item-Balance,
-        BalanceCurrent            TYPE RANGE OF zc_mm_inventory_item-BalanceCurrent,
+*        QuantityCurrent           TYPE RANGE OF zc_mm_inventory_item-QuantityCurrent,
+*        Balance                   TYPE RANGE OF zc_mm_inventory_item-Balance,
+*        BalanceCurrent            TYPE RANGE OF zc_mm_inventory_item-BalanceCurrent,
         Unit                      TYPE RANGE OF zc_mm_inventory_item-Unit,
-        PriceStock                TYPE RANGE OF zc_mm_inventory_item-PriceStock,
-        PriceCount                TYPE RANGE OF zc_mm_inventory_item-PriceCount,
-        PriceDiff                 TYPE RANGE OF zc_mm_inventory_item-PriceDiff,
-        Currency                  TYPE RANGE OF zc_mm_inventory_item-Currency,
-        Weight                    TYPE RANGE OF zc_mm_inventory_item-Weight,
-        WeightUnit                TYPE RANGE OF zc_mm_inventory_item-WeightUnit,
+*        PriceStock                TYPE RANGE OF zc_mm_inventory_item-PriceStock,
+*        PriceCount                TYPE RANGE OF zc_mm_inventory_item-PriceCount,
+*        PriceDiff                 TYPE RANGE OF zc_mm_inventory_item-PriceDiff,
+*        Currency                  TYPE RANGE OF zc_mm_inventory_item-Currency,
+*        Weight                    TYPE RANGE OF zc_mm_inventory_item-Weight,
+*        WeightUnit                TYPE RANGE OF zc_mm_inventory_item-WeightUnit,
         Accuracy                  TYPE RANGE OF zc_mm_inventory_item-Accuracy,
-        CompanyCode               TYPE RANGE OF zc_mm_inventory_item-CompanyCode,
-        CompanyCodeName           TYPE RANGE OF zc_mm_inventory_item-CompanyCodeName,
+*        CompanyCode               TYPE RANGE OF zc_mm_inventory_item-CompanyCode,
+*        CompanyCodeName           TYPE RANGE OF zc_mm_inventory_item-CompanyCodeName,
         PhysicalInventoryDocument TYPE RANGE OF zc_mm_inventory_item-PhysicalInventoryDocument,
         FiscalYear                TYPE RANGE OF zc_mm_inventory_item-FiscalYear,
       END OF ty_filter.
@@ -325,26 +323,6 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
     ENDTRY.
 
     TRY.
-        es_filter-plant                     = VALUE #( FOR ls_range IN it_range[ name = 'PLANT' ]-range (
-                                                                                 sign   = ls_range-sign
-                                                                                 option = ls_range-option
-                                                                                 low    = ls_range-low
-                                                                                 high   = ls_range-high ) ).
-      CATCH cx_root INTO lo_root.
-        lv_exp_msg = lo_root->get_longtext( ).
-    ENDTRY.
-
-    TRY.
-        es_filter-plantname                 = VALUE #( FOR ls_range IN it_range[ name = 'PLANTNAME' ]-range (
-                                                                                 sign   = ls_range-sign
-                                                                                 option = ls_range-option
-                                                                                 low    = ls_range-low
-                                                                                 high   = ls_range-high ) ).
-      CATCH cx_root INTO lo_root.
-        lv_exp_msg = lo_root->get_longtext( ).
-    ENDTRY.
-
-    TRY.
         es_filter-storagelocation           = VALUE #( FOR ls_range IN it_range[ name = 'STORAGELOCATION' ]-range (
                                                                                  sign   = ls_range-sign
                                                                                  option = ls_range-option
@@ -374,15 +352,15 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
         lv_exp_msg = lo_root->get_longtext( ).
     ENDTRY.
 
-    TRY.
-        es_filter-quantitystock             = VALUE #( FOR ls_range IN it_range[ name = 'QUANTITYSTOCK' ]-range (
-                                                                                 sign   = ls_range-sign
-                                                                                 option = ls_range-option
-                                                                                 low    = ls_range-low
-                                                                                 high   = ls_range-high ) ).
-      CATCH cx_root INTO lo_root.
-        lv_exp_msg = lo_root->get_longtext( ).
-    ENDTRY.
+*    TRY.
+*        es_filter-quantitystock             = VALUE #( FOR ls_range IN it_range[ name = 'QUANTITYSTOCK' ]-range (
+*                                                                                 sign   = ls_range-sign
+*                                                                                 option = ls_range-option
+*                                                                                 low    = ls_range-low
+*                                                                                 high   = ls_range-high ) ).
+*      CATCH cx_root INTO lo_root.
+*        lv_exp_msg = lo_root->get_longtext( ).
+*    ENDTRY.
 
     TRY.
         es_filter-quantitycount             = VALUE #( FOR ls_range IN it_range[ name = 'QUANTITYCOUNT' ]-range (
@@ -394,35 +372,35 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
         lv_exp_msg = lo_root->get_longtext( ).
     ENDTRY.
 
-    TRY.
-        es_filter-quantitycurrent           = VALUE #( FOR ls_range IN it_range[ name = 'QUANTITYCURRENT' ]-range (
-                                                                                 sign   = ls_range-sign
-                                                                                 option = ls_range-option
-                                                                                 low    = ls_range-low
-                                                                                 high   = ls_range-high ) ).
-      CATCH cx_root INTO lo_root.
-        lv_exp_msg = lo_root->get_longtext( ).
-    ENDTRY.
+*    TRY.
+*        es_filter-quantitycurrent           = VALUE #( FOR ls_range IN it_range[ name = 'QUANTITYCURRENT' ]-range (
+*                                                                                 sign   = ls_range-sign
+*                                                                                 option = ls_range-option
+*                                                                                 low    = ls_range-low
+*                                                                                 high   = ls_range-high ) ).
+*      CATCH cx_root INTO lo_root.
+*        lv_exp_msg = lo_root->get_longtext( ).
+*    ENDTRY.
 
-    TRY.
-        es_filter-balance                   = VALUE #( FOR ls_range IN it_range[ name = 'BALANCE' ]-range (
-                                                                                 sign   = ls_range-sign
-                                                                                 option = ls_range-option
-                                                                                 low    = ls_range-low
-                                                                                 high   = ls_range-high ) ).
-      CATCH cx_root INTO lo_root.
-        lv_exp_msg = lo_root->get_longtext( ).
-    ENDTRY.
+*    TRY.
+*        es_filter-balance                   = VALUE #( FOR ls_range IN it_range[ name = 'BALANCE' ]-range (
+*                                                                                 sign   = ls_range-sign
+*                                                                                 option = ls_range-option
+*                                                                                 low    = ls_range-low
+*                                                                                 high   = ls_range-high ) ).
+*      CATCH cx_root INTO lo_root.
+*        lv_exp_msg = lo_root->get_longtext( ).
+*    ENDTRY.
 
-    TRY.
-        es_filter-balancecurrent            = VALUE #( FOR ls_range IN it_range[ name = 'BALANCECURRENT' ]-range (
-                                                                                 sign   = ls_range-sign
-                                                                                 option = ls_range-option
-                                                                                 low    = ls_range-low
-                                                                                 high   = ls_range-high ) ).
-      CATCH cx_root INTO lo_root.
-        lv_exp_msg = lo_root->get_longtext( ).
-    ENDTRY.
+*    TRY.
+*        es_filter-balancecurrent            = VALUE #( FOR ls_range IN it_range[ name = 'BALANCECURRENT' ]-range (
+*                                                                                 sign   = ls_range-sign
+*                                                                                 option = ls_range-option
+*                                                                                 low    = ls_range-low
+*                                                                                 high   = ls_range-high ) ).
+*      CATCH cx_root INTO lo_root.
+*        lv_exp_msg = lo_root->get_longtext( ).
+*    ENDTRY.
 
     TRY.
         es_filter-unit                      = VALUE #( FOR ls_range IN it_range[ name = 'UNIT' ]-range (
@@ -434,65 +412,65 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
         lv_exp_msg = lo_root->get_longtext( ).
     ENDTRY.
 
-    TRY.
-        es_filter-pricestock                = VALUE #( FOR ls_range IN it_range[ name = 'PRICESTOCK' ]-range (
-                                                                                 sign   = ls_range-sign
-                                                                                 option = ls_range-option
-                                                                                 low    = ls_range-low
-                                                                                 high   = ls_range-high ) ).
-      CATCH cx_root INTO lo_root.
-        lv_exp_msg = lo_root->get_longtext( ).
-    ENDTRY.
+*    TRY.
+*        es_filter-pricestock                = VALUE #( FOR ls_range IN it_range[ name = 'PRICESTOCK' ]-range (
+*                                                                                 sign   = ls_range-sign
+*                                                                                 option = ls_range-option
+*                                                                                 low    = ls_range-low
+*                                                                                 high   = ls_range-high ) ).
+*      CATCH cx_root INTO lo_root.
+*        lv_exp_msg = lo_root->get_longtext( ).
+*    ENDTRY.
 
-    TRY.
-        es_filter-pricecount                = VALUE #( FOR ls_range IN it_range[ name = 'PRICECOUNT' ]-range (
-                                                                                 sign   = ls_range-sign
-                                                                                 option = ls_range-option
-                                                                                 low    = ls_range-low
-                                                                                 high   = ls_range-high ) ).
-      CATCH cx_root INTO lo_root.
-        lv_exp_msg = lo_root->get_longtext( ).
-    ENDTRY.
+*    TRY.
+*        es_filter-pricecount                = VALUE #( FOR ls_range IN it_range[ name = 'PRICECOUNT' ]-range (
+*                                                                                 sign   = ls_range-sign
+*                                                                                 option = ls_range-option
+*                                                                                 low    = ls_range-low
+*                                                                                 high   = ls_range-high ) ).
+*      CATCH cx_root INTO lo_root.
+*        lv_exp_msg = lo_root->get_longtext( ).
+*    ENDTRY.
 
-    TRY.
-        es_filter-pricediff                 = VALUE #( FOR ls_range IN it_range[ name = 'PRICEDIFF' ]-range (
-                                                                                 sign   = ls_range-sign
-                                                                                 option = ls_range-option
-                                                                                 low    = ls_range-low
-                                                                                 high   = ls_range-high ) ).
-      CATCH cx_root INTO lo_root.
-        lv_exp_msg = lo_root->get_longtext( ).
-    ENDTRY.
+*    TRY.
+*        es_filter-pricediff                 = VALUE #( FOR ls_range IN it_range[ name = 'PRICEDIFF' ]-range (
+*                                                                                 sign   = ls_range-sign
+*                                                                                 option = ls_range-option
+*                                                                                 low    = ls_range-low
+*                                                                                 high   = ls_range-high ) ).
+*      CATCH cx_root INTO lo_root.
+*        lv_exp_msg = lo_root->get_longtext( ).
+*    ENDTRY.
 
-    TRY.
-        es_filter-currency                  = VALUE #( FOR ls_range IN it_range[ name = 'CURRENCY' ]-range (
-                                                                                 sign   = ls_range-sign
-                                                                                 option = ls_range-option
-                                                                                 low    = ls_range-low
-                                                                                 high   = ls_range-high ) ).
-      CATCH cx_root INTO lo_root.
-        lv_exp_msg = lo_root->get_longtext( ).
-    ENDTRY.
+*    TRY.
+*        es_filter-currency                  = VALUE #( FOR ls_range IN it_range[ name = 'CURRENCY' ]-range (
+*                                                                                 sign   = ls_range-sign
+*                                                                                 option = ls_range-option
+*                                                                                 low    = ls_range-low
+*                                                                                 high   = ls_range-high ) ).
+*      CATCH cx_root INTO lo_root.
+*        lv_exp_msg = lo_root->get_longtext( ).
+*    ENDTRY.
 
-    TRY.
-        es_filter-weight                    = VALUE #( FOR ls_range IN it_range[ name = 'WEIGHT' ]-range (
-                                                                                 sign   = ls_range-sign
-                                                                                 option = ls_range-option
-                                                                                 low    = ls_range-low
-                                                                                 high   = ls_range-high ) ).
-      CATCH cx_root INTO lo_root.
-        lv_exp_msg = lo_root->get_longtext( ).
-    ENDTRY.
+*    TRY.
+*        es_filter-weight                    = VALUE #( FOR ls_range IN it_range[ name = 'WEIGHT' ]-range (
+*                                                                                 sign   = ls_range-sign
+*                                                                                 option = ls_range-option
+*                                                                                 low    = ls_range-low
+*                                                                                 high   = ls_range-high ) ).
+*      CATCH cx_root INTO lo_root.
+*        lv_exp_msg = lo_root->get_longtext( ).
+*    ENDTRY.
 
-    TRY.
-        es_filter-weightunit                = VALUE #( FOR ls_range IN it_range[ name = 'WEIGHTUNIT' ]-range (
-                                                                                 sign   = ls_range-sign
-                                                                                 option = ls_range-option
-                                                                                 low    = ls_range-low
-                                                                                 high   = ls_range-high ) ).
-      CATCH cx_root INTO lo_root.
-        lv_exp_msg = lo_root->get_longtext( ).
-    ENDTRY.
+*    TRY.
+*        es_filter-weightunit                = VALUE #( FOR ls_range IN it_range[ name = 'WEIGHTUNIT' ]-range (
+*                                                                                 sign   = ls_range-sign
+*                                                                                 option = ls_range-option
+*                                                                                 low    = ls_range-low
+*                                                                                 high   = ls_range-high ) ).
+*      CATCH cx_root INTO lo_root.
+*        lv_exp_msg = lo_root->get_longtext( ).
+*    ENDTRY.
 
     TRY.
         es_filter-accuracy                  = VALUE #( FOR ls_range IN it_range[ name = 'ACCURACY' ]-range (
@@ -504,25 +482,25 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
         lv_exp_msg = lo_root->get_longtext( ).
     ENDTRY.
 
-    TRY.
-        es_filter-companycode               = VALUE #( FOR ls_range IN it_range[ name = 'COMPANYCODE' ]-range (
-                                                                                 sign   = ls_range-sign
-                                                                                 option = ls_range-option
-                                                                                 low    = ls_range-low
-                                                                                 high   = ls_range-high ) ).
-      CATCH cx_root INTO lo_root.
-        lv_exp_msg = lo_root->get_longtext( ).
-    ENDTRY.
+*    TRY.
+*        es_filter-companycode               = VALUE #( FOR ls_range IN it_range[ name = 'COMPANYCODE' ]-range (
+*                                                                                 sign   = ls_range-sign
+*                                                                                 option = ls_range-option
+*                                                                                 low    = ls_range-low
+*                                                                                 high   = ls_range-high ) ).
+*      CATCH cx_root INTO lo_root.
+*        lv_exp_msg = lo_root->get_longtext( ).
+*    ENDTRY.
 
-    TRY.
-        es_filter-companycodename           = VALUE #( FOR ls_range IN it_range[ name = 'COMPANYCODENAME' ]-range (
-                                                                                 sign   = ls_range-sign
-                                                                                 option = ls_range-option
-                                                                                 low    = ls_range-low
-                                                                                 high   = ls_range-high ) ).
-      CATCH cx_root INTO lo_root.
-        lv_exp_msg = lo_root->get_longtext( ).
-    ENDTRY.
+*    TRY.
+*        es_filter-companycodename           = VALUE #( FOR ls_range IN it_range[ name = 'COMPANYCODENAME' ]-range (
+*                                                                                 sign   = ls_range-sign
+*                                                                                 option = ls_range-option
+*                                                                                 low    = ls_range-low
+*                                                                                 high   = ls_range-high ) ).
+*      CATCH cx_root INTO lo_root.
+*        lv_exp_msg = lo_root->get_longtext( ).
+*    ENDTRY.
 
     TRY.
         es_filter-physicalinventorydocument = VALUE #( FOR ls_range IN it_range[ name = 'PHYSICALINVENTORYDOCUMENT' ]-range (
@@ -612,23 +590,21 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
           AND StatusText                 IN @is_filter-StatusText
           AND Material                   IN @is_filter-Material
           AND MaterialName               IN @is_filter-MaterialName
-          AND Plant                      IN @is_filter-Plant
-          AND PlantName                  IN @is_filter-PlantName
           AND StorageLocation            IN @is_filter-StorageLocation
           AND StorageLocationName        IN @is_filter-StorageLocationName
           AND Batch                      IN @is_filter-Batch
-          AND QuantityStock              IN @is_filter-QuantityStock
+*          AND QuantityStock              IN @is_filter-QuantityStock
           AND QuantityCount              IN @is_filter-QuantityCount
-          AND QuantityCurrent            IN @is_filter-QuantityCurrent
-          AND Balance                    IN @is_filter-Balance
-          AND BalanceCurrent             IN @is_filter-BalanceCurrent
+*          AND QuantityCurrent            IN @is_filter-QuantityCurrent
+*          AND Balance                    IN @is_filter-Balance
+*          AND BalanceCurrent             IN @is_filter-BalanceCurrent
           AND Unit                       IN @is_filter-Unit
-          AND PriceStock                 IN @is_filter-PriceStock
-          AND PriceCount                 IN @is_filter-PriceCount
-          AND PriceDiff                  IN @is_filter-PriceDiff
-          AND Currency                   IN @is_filter-Currency
-          AND Weight                     IN @is_filter-Weight
-          AND WeightUnit                 IN @is_filter-WeightUnit
+*          AND PriceStock                 IN @is_filter-PriceStock
+*          AND PriceCount                 IN @is_filter-PriceCount
+*          AND PriceDiff                  IN @is_filter-PriceDiff
+*          AND Currency                   IN @is_filter-Currency
+*          AND Weight                     IN @is_filter-Weight
+*          AND WeightUnit                 IN @is_filter-WeightUnit
 *          AND Accuracy                   IN @is_filter-Accuracy
 *          AND CompanyCode                IN @is_filter-CompanyCode
 *          AND CompanyCodeName            IN @is_filter-CompanyCodeName
@@ -737,7 +713,7 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
       " Recupera dados estoque de material (contagem)
       READ TABLE it_material_stock INTO DATA(ls_mat_stock_count) WITH KEY EndDate          = ls_head->countdate
                                                                           Material         = ls_item->Material
-                                                                          Plant            = ls_item->Plant
+                                                                          Plant            = ls_head->Plant
                                                                           StorageLocation  = ls_item->StorageLocation
                                                                           Batch            = ls_item->Batch
                                                                           MaterialBaseUnit = ls_item->Unit
@@ -750,7 +726,7 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
       " Recupera dados estoque de material (contagem)
       READ TABLE it_material_stock INTO DATA(ls_mat_stock_current) WITH KEY EndDate          = ls_head->countdate
                                                                             Material         = ls_item->Material
-                                                                            Plant            = ls_item->Plant
+                                                                            Plant            = ls_head->Plant
                                                                             StorageLocation  = ls_item->StorageLocation
                                                                             Batch            = ls_item->Batch
                                                                             MaterialBaseUnit = ls_item->Unit
@@ -761,16 +737,16 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
       ENDIF.
 
       " Recupera preço do material
-      READ TABLE it_material_price INTO DATA(ls_material_price) WITH KEY valuationarea = ls_item->Plant
+      READ TABLE it_material_price INTO DATA(ls_material_price) WITH KEY valuationarea = ls_head->Plant
                                                                             Material   = ls_item->Material
                                                                             baseunit   = ls_item->Unit
                                                                             currency   = 'BRL'
                                                                             BINARY SEARCH.
       IF sy-subrc NE 0.
 
-        READ TABLE it_material_price INTO ls_material_price WITH KEY valuationarea = ls_item->Plant
-                                                                     Material   = ls_item->Material
-                                                                     baseunit   = ls_item->Unit
+        READ TABLE it_material_price INTO ls_material_price WITH KEY valuationarea = ls_head->Plant
+                                                                     Material      = ls_item->Material
+                                                                     baseunit      = ls_item->Unit
                                                                      BINARY SEARCH.
 
         IF sy-subrc NE 0.
@@ -797,14 +773,6 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
                                                       THEN ls_mat_stock_count-MaterialName
                                                       WHEN ls_mat_stock_current-MaterialName IS NOT INITIAL
                                                       THEN ls_mat_stock_current-MaterialName
-                                                      ELSE space ).
-
-      ls_report-PlantName                   = COND #( WHEN ls_report-PlantName IS NOT INITIAL
-                                                      THEN ls_report-PlantName
-                                                      WHEN ls_mat_stock_count-PlantName IS NOT INITIAL
-                                                      THEN ls_mat_stock_count-PlantName
-                                                      WHEN ls_mat_stock_current-PlantName IS NOT INITIAL
-                                                      THEN ls_mat_stock_current-PlantName
                                                       ELSE space ).
 
       ls_report-StorageLocationName         = COND #( WHEN ls_report-StorageLocationName IS NOT INITIAL
@@ -875,6 +843,18 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
         CATCH cx_root.
           ls_report-accuracy                = 0.
       ENDTRY.
+
+      ls_report-accuracy                    = COND #( WHEN ls_report-accuracy > 100
+                                                      THEN 100
+                                                      WHEN ls_report-accuracy < 0
+                                                      THEN 0
+                                                      ELSE ls_report-accuracy ).
+
+      ls_report-AccuracyCrit                = COND #( WHEN ls_report-accuracy >= 95
+                                                      THEN gc_color-positive
+                                                      WHEN ls_report-accuracy > 0
+                                                      THEN gc_color-negative
+                                                      ELSE gc_color-new ).
 
       ls_report-MaterialDocument            = ls_phys_inv_info-MaterialDocument.
       ls_report-MaterialDocumentYear        = ls_phys_inv_info-MaterialDocumentYear.

@@ -2,12 +2,10 @@
 @AccessControl.authorizationCheck: #NOT_REQUIRED
 @Metadata.allowExtensions: true
 
-@ObjectModel.semanticKey: ['Material', 'Plant']
+@ObjectModel.semanticKey: ['Material', 'StorageLocation', 'Batch']
 
 define view entity ZC_MM_INVENTORY_ITEM
   as projection on ZI_MM_INVENTORY_ITEM
-
-  association [0..1] to ZI_MM_CE_VH_MATERIAL as _Material on _Material.Material = $projection.Material
 {
   key DocumentId,
   key DocumentItemId,
@@ -17,27 +15,23 @@ define view entity ZC_MM_INVENTORY_ITEM
       StatusCrit,
       @ObjectModel.text.element : ['MaterialName']
       Material,
-//      _Material.MaterialName,
       MaterialName,
-      @ObjectModel.text.element : ['PlantName']
-      Plant,
-      PlantName,
       @ObjectModel.text.element : ['StorageLocationName']
       StorageLocation,
       StorageLocationName,
       Batch,
-      QuantityStock,
+//      QuantityStock,
       QuantityCount,
-      QuantityCurrent,
-      Balance,
-      BalanceCurrent,
+//      QuantityCurrent,
+//      Balance,
+//      BalanceCurrent,
       Unit,
-      PriceStock,
-      PriceCount,
-      PriceDiff,
-      Currency,
-      Weight,
-      WeightUnit,
+//      PriceStock,
+//      PriceCount,
+//      PriceDiff,
+//      Currency,
+//      Weight,
+//      WeightUnit,
 //      ProductHierarchy,
       Accuracy,
 //      MaterialDocumentYear,
@@ -52,8 +46,8 @@ define view entity ZC_MM_INVENTORY_ITEM
 //      BR_NFIsCanceled,
 //      BR_NFeDocumentStatus,
 //      BR_NFeDocumentStatusText,
-      CompanyCode,
-      CompanyCodeName,
+//      CompanyCode,
+//      CompanyCodeName,
       PhysicalInventoryDocument,
       FiscalYear,
 //      ExternalReference,
