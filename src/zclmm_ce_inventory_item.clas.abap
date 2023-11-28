@@ -7,20 +7,6 @@ CLASS zclmm_ce_inventory_item DEFINITION
     INTERFACES if_oo_adt_classrun .
     INTERFACES if_rap_query_provider .
 
-    CONSTANTS:
-      BEGIN OF gc_color,
-        new      TYPE i VALUE 0,
-        negative TYPE i VALUE 1,
-        critical TYPE i VALUE 2,
-        positive TYPE i VALUE 3,
-      END OF gc_color,
-
-      BEGIN OF gc_quantity_stock,
-        rfc_failed     TYPE c LENGTH 60 VALUE 'Falha na conexão!'  ##NO_TEXT,
-        no_stock_found TYPE c LENGTH 60 VALUE 'Estoque não encontrado!'  ##NO_TEXT,
-        stock_found    TYPE c LENGTH 60 VALUE 'OK'  ##NO_TEXT,
-      END OF gc_quantity_stock.
-
     TYPES:
       ty_report     TYPE zc_mm_ce_inventory_item,
       ty_t_report_s TYPE SORTED TABLE OF ty_report
@@ -74,26 +60,6 @@ CLASS zclmm_ce_inventory_item DEFINITION
                 iv_set_skip TYPE i DEFAULT 0
       EXPORTING et_head     TYPE ty_t_head
                 et_item     TYPE ty_t_item.
-
-    "! Chama RFC e recupera dados de inventário
-    METHODS call_rfc_inventory_get_info
-      IMPORTING it_rfc_head       TYPE z_s41_rfc_inventory_get_info=>zctgmm_inventory_head
-                it_rfc_item       TYPE z_s41_rfc_inventory_get_info=>zctgmm_inventory_item
-      EXPORTING et_material_stock TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_material_stock
-                et_material_price TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_material_price
-                et_phys_inv_info  TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_phys_inv_info
-                et_return         TYPE ty_t_return.
-
-    METHODS build_report_info
-      IMPORTING it_head           TYPE ty_t_head
-                it_item           TYPE ty_t_item
-                it_material_stock TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_material_stock
-                it_material_price TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_material_price
-                it_phys_inv_info  TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_phys_inv_info
-                it_return_rfc     TYPE ty_t_return OPTIONAL
-      EXPORTING et_report         TYPE ty_t_report
-                et_return         TYPE ty_t_return.
-
 
   PROTECTED SECTION.
   PRIVATE SECTION.
@@ -549,27 +515,29 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
                   IMPORTING et_head     = DATA(lt_head)
                             et_item     = DATA(lt_item) ).
 
+    DATA(lo_behavior) = zclmm_bd_inventory=>get_instance( ).
+
 * ----------------------------------------------------------------------
 * Recupera dados de inventário via RFC
 * ----------------------------------------------------------------------
-    me->call_rfc_inventory_get_info( EXPORTING it_rfc_head       = CORRESPONDING #( lt_head )
-                                               it_rfc_item       = CORRESPONDING #( lt_item )
-                                     IMPORTING et_material_stock = DATA(lt_material_stock)
-                                               et_material_price = DATA(lt_material_price)
-                                               et_phys_inv_info  = DATA(lt_phys_inv_info)
-                                               et_return         = DATA(lt_return_rfc) ).
+    lo_behavior->call_rfc_inventory_get_info( EXPORTING it_rfc_head       = CORRESPONDING #( lt_head )
+                                                        it_rfc_item       = CORRESPONDING #( lt_item )
+                                              IMPORTING et_material_stock = DATA(lt_material_stock)
+                                                        et_material_price = DATA(lt_material_price)
+                                                        et_phys_inv_info  = DATA(lt_phys_inv_info)
+                                                        et_return         = DATA(lt_return_rfc) ).
 
 * ----------------------------------------------------------------------
 * Atualiza relatório com os dados do inventário
 * ----------------------------------------------------------------------
-    me->build_report_info( EXPORTING it_head           = lt_head
-                                     it_item           = lt_item
-                                     it_material_stock = lt_material_stock
-                                     it_material_price = lt_material_price
-                                     it_phys_inv_info  = lt_phys_inv_info
-                                     it_return_rfc     = lt_return_rfc
-                           IMPORTING et_report         = et_report
-                                     et_return         = DATA(lt_return) ).
+    lo_behavior->build_report_item( EXPORTING it_head           = CORRESPONDING #( lt_head )
+                                              it_item           = CORRESPONDING #( lt_item )
+                                              it_material_stock = lt_material_stock
+                                              it_material_price = lt_material_price
+                                              it_phys_inv_info  = lt_phys_inv_info
+                                              it_return_rfc     = lt_return_rfc
+                                    IMPORTING et_report         = et_report
+                                              et_return         = DATA(lt_return) ).
 
     INSERT LINES OF lt_return INTO TABLE et_return.
 
@@ -610,10 +578,10 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
 *          AND CompanyCodeName            IN @is_filter-CompanyCodeName
           AND PhysicalInventoryDocument  IN @is_filter-PhysicalInventoryDocument
           AND FiscalYear                 IN @is_filter-FiscalYear
-         ORDER BY DocumentId, DocumentItemId
-         INTO TABLE @et_item
-         UP TO @iv_set_top ROWS
-         OFFSET @iv_set_skip.
+*         ORDER BY DocumentId, DocumentItemId
+         INTO CORRESPONDING FIELDS OF TABLE @et_item.
+*         UP TO @iv_set_top ROWS
+*         OFFSET @iv_set_skip.
 
     IF sy-subrc EQ 0 .
       SORT et_item BY DocumentId DocumentItemId.
@@ -641,243 +609,5 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
 
   ENDMETHOD.
 
-
-  METHOD call_rfc_inventory_get_info.
-
-    DATA: lo_dest  TYPE REF TO if_rfc_dest,
-          lo_myobj TYPE REF TO z_s41_rfc_inventory_get_info,
-          lv_text  TYPE bapiret2-message.
-
-    FREE: et_material_stock, et_material_price, et_phys_inv_info, et_return.
-
-    CHECK it_rfc_head IS NOT INITIAL.
-    CHECK it_rfc_item IS NOT INITIAL.
-
-* ----------------------------------------------------------------------
-* Chama RFC
-* ----------------------------------------------------------------------
-    TRY.
-        lo_dest = cl_rfc_destination_provider=>create_by_cloud_destination( i_name = 'S41_RFC_120' ).
-
-        CREATE OBJECT lo_myobj
-          EXPORTING
-            destination = lo_dest.
-
-        " Execução da BAPI via RFC
-        lo_myobj->zfmmm_inventory_get_info(
-           EXPORTING
-             it_head           = it_rfc_head
-             it_item           = it_rfc_item
-           IMPORTING
-             et_material_stock = et_material_stock
-             et_material_price = et_material_price
-             et_phys_inv_info  = et_phys_inv_info
-         ).
-
-      CATCH  cx_aco_communication_failure INTO DATA(lo_comm).
-        lv_text = lo_comm->get_longtext( ).
-        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
-      CATCH cx_aco_system_failure INTO DATA(lo_sys).
-        lv_text = lo_sys->get_longtext( ).
-        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
-      CATCH cx_aco_application_exception INTO DATA(lo_appl).
-        lv_text = lo_appl->get_longtext( ).
-        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
-      CATCH cx_rfc_dest_provider_error INTO DATA(lo_error).
-        lv_text = lo_error->get_longtext( ).
-        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
-    ENDTRY.
-
-    SORT et_material_stock BY enddate material plant storagelocation batch materialbaseunit.
-    SORT et_material_price BY valuationarea Material baseunit currency.
-    SORT et_phys_inv_info BY fiscalyear physicalinventorydocument.
-
-  ENDMETHOD.
-
-
-  METHOD build_report_info.
-
-    DATA: ls_report TYPE ty_report.
-
-    FREE: et_report, et_return.
-
-    LOOP AT it_item REFERENCE INTO DATA(ls_item).
-
-      " Recupera dados de cabeçalho
-      READ TABLE it_head REFERENCE INTO DATA(ls_head) WITH KEY documentid = ls_item->DocumentId BINARY SEARCH.
-
-      IF sy-subrc NE 0.
-        CONTINUE.
-      ENDIF.
-
-      " Recupera dados estoque de material (contagem)
-      READ TABLE it_material_stock INTO DATA(ls_mat_stock_count) WITH KEY EndDate          = ls_head->countdate
-                                                                          Material         = ls_item->Material
-                                                                          Plant            = ls_head->Plant
-                                                                          StorageLocation  = ls_item->StorageLocation
-                                                                          Batch            = ls_item->Batch
-                                                                          MaterialBaseUnit = ls_item->Unit
-                                                                          BINARY SEARCH.
-
-      IF sy-subrc NE 0.
-        CLEAR ls_mat_stock_count.
-      ENDIF.
-
-      " Recupera dados estoque de material (contagem)
-      READ TABLE it_material_stock INTO DATA(ls_mat_stock_current) WITH KEY EndDate          = ls_head->countdate
-                                                                            Material         = ls_item->Material
-                                                                            Plant            = ls_head->Plant
-                                                                            StorageLocation  = ls_item->StorageLocation
-                                                                            Batch            = ls_item->Batch
-                                                                            MaterialBaseUnit = ls_item->Unit
-                                                                            BINARY SEARCH.
-
-      IF sy-subrc NE 0.
-        CLEAR ls_mat_stock_current.
-      ENDIF.
-
-      " Recupera preço do material
-      READ TABLE it_material_price INTO DATA(ls_material_price) WITH KEY valuationarea = ls_head->Plant
-                                                                            Material   = ls_item->Material
-                                                                            baseunit   = ls_item->Unit
-                                                                            currency   = 'BRL'
-                                                                            BINARY SEARCH.
-      IF sy-subrc NE 0.
-
-        READ TABLE it_material_price INTO ls_material_price WITH KEY valuationarea = ls_head->Plant
-                                                                     Material      = ls_item->Material
-                                                                     baseunit      = ls_item->Unit
-                                                                     BINARY SEARCH.
-
-        IF sy-subrc NE 0.
-          CLEAR ls_mat_stock_current.
-        ENDIF.
-      ENDIF.
-
-
-      " Recupera dados de inventário
-      READ TABLE it_phys_inv_info INTO DATA(ls_phys_inv_info) WITH KEY FiscalYear                = ls_item->FiscalYear
-                                                                       PhysicalInventoryDocument = ls_item->PhysicalInventoryDocument
-                                                                       BINARY SEARCH.
-      IF sy-subrc NE 0.
-        CLEAR ls_phys_inv_info.
-      ENDIF.
-
-
-      CLEAR ls_report.
-      ls_report = CORRESPONDING #( ls_item->* ).
-
-      ls_report-MaterialName                = COND #( WHEN ls_report-MaterialName IS NOT INITIAL
-                                                      THEN ls_report-MaterialName
-                                                      WHEN ls_mat_stock_count-MaterialName IS NOT INITIAL
-                                                      THEN ls_mat_stock_count-MaterialName
-                                                      WHEN ls_mat_stock_current-MaterialName IS NOT INITIAL
-                                                      THEN ls_mat_stock_current-MaterialName
-                                                      ELSE space ).
-
-      ls_report-StorageLocationName         = COND #( WHEN ls_report-StorageLocationName IS NOT INITIAL
-                                                      THEN ls_report-StorageLocationName
-                                                      WHEN ls_mat_stock_count-StorageLocationName IS NOT INITIAL
-                                                      THEN ls_mat_stock_count-StorageLocationName
-                                                      WHEN ls_mat_stock_current-StorageLocationName IS NOT INITIAL
-                                                      THEN ls_mat_stock_current-StorageLocationName
-                                                      ELSE space ).
-
-      ls_report-QuantityStock               = ls_mat_stock_count-PeriodQuantity.
-
-      ls_report-QuantityStockText           = COND #( WHEN it_return_rfc IS NOT INITIAL " Ocorreu algum erro na chamada RFC
-                                                      THEN gc_quantity_stock-rfc_failed
-                                                      ELSE gc_quantity_stock-stock_found ).
-
-      ls_report-QuantityStockCrit           = COND #( WHEN it_return_rfc IS NOT INITIAL
-                                                      THEN gc_color-negative
-                                                      WHEN ls_mat_stock_count IS INITIAL
-                                                      THEN gc_color-critical
-                                                      ELSE gc_color-positive ).
-
-      ls_report-QuantityCurrent             = ls_mat_stock_current-PeriodQuantity.
-
-      ls_report-QuantityCurrentCrit         = COND #( WHEN it_return_rfc IS NOT INITIAL
-                                                      THEN gc_color-negative
-                                                      WHEN ls_mat_stock_current IS INITIAL
-                                                      THEN gc_color-critical
-                                                      ELSE gc_color-positive ).
-
-      ls_report-balance                     = ls_report-QuantityCount - ls_report-QuantityStock.
-      ls_report-balancecurrent              = ls_report-QuantityCount - ls_report-QuantityCurrent.
-
-      TRY.
-          ls_report-pricestock              = ( ls_material_price-inventoryprice / ls_material_price-materialpriceunitqty ) * ls_report-quantitystock.
-        CATCH cx_root.
-          ls_report-pricestock              = 0.
-      ENDTRY.
-
-      TRY.
-          ls_report-pricecount              = ( ls_material_price-inventoryprice / ls_material_price-materialpriceunitqty ) * ls_report-quantitycount.
-        CATCH cx_root.
-          ls_report-pricecount              = 0.
-      ENDTRY.
-
-      TRY.
-          ls_report-pricediff               = abs( ( ls_material_price-inventoryprice / ls_material_price-materialpriceunitqty ) * ls_report-balance ).
-        CATCH cx_root.
-          ls_report-pricediff               = 0.
-      ENDTRY.
-
-      ls_report-currency                    = ls_material_price-currency.
-
-      TRY.
-          ls_report-weight                  =  ls_material_price-grossweight * ls_report-balance.
-        CATCH cx_root.
-          ls_report-weight                  = 0.
-      ENDTRY.
-
-      TRY.
-          ls_report-weightunit              = ls_material_price-weightunit.
-        CATCH cx_root.
-          ls_report-weightunit              = space.
-      ENDTRY.
-
-      TRY.
-          ls_report-accuracy                = ( 1 - ( ls_report-pricediff / ls_report-pricestock ) ) * 100.
-        CATCH cx_root.
-          ls_report-accuracy                = 0.
-      ENDTRY.
-
-      ls_report-accuracy                    = COND #( WHEN ls_report-accuracy > 100
-                                                      THEN 100
-                                                      WHEN ls_report-accuracy < 0
-                                                      THEN 0
-                                                      ELSE ls_report-accuracy ).
-
-      ls_report-AccuracyCrit                = COND #( WHEN ls_report-accuracy >= 95
-                                                      THEN gc_color-positive
-                                                      WHEN ls_report-accuracy > 0
-                                                      THEN gc_color-negative
-                                                      ELSE gc_color-new ).
-
-      ls_report-MaterialDocument            = ls_phys_inv_info-MaterialDocument.
-      ls_report-MaterialDocumentYear        = ls_phys_inv_info-MaterialDocumentYear.
-      ls_report-PostingDate                 = ls_phys_inv_info-postingdate.
-      ls_report-BR_NotaFiscal               = ls_phys_inv_info-br_notafiscal.
-      ls_report-BR_NFeNumber                = ls_phys_inv_info-br_nfenumber.
-      ls_report-BR_NFIsCanceled             = ls_phys_inv_info-br_nfiscanceled.
-      ls_report-BR_NFeDocumentStatus        = ls_phys_inv_info-br_nfedocumentstatus.
-      ls_report-BR_NFeDocumentStatusText    = ls_phys_inv_info-br_nfedocumentstatustext.
-      ls_report-CompanyCode                 = ls_phys_inv_info-companycode.
-      ls_report-CompanyCodeName             = ls_phys_inv_info-CompanyCodeName.
-      ls_report-AccountingDocument          = ls_phys_inv_info-accountingdocument.
-      ls_report-AccountingDocumentYear      = ls_phys_inv_info-accountingdocumentyear.
-      ls_report-ExternalReference           = ls_phys_inv_info-externalreference.
-      ls_report-DocumentDate                = ls_phys_inv_info-documentdate.
-
-      ls_report-ProductHierarchy            = ls_material_price-producthierarchy.
-
-
-      et_report = VALUE #( BASE et_report ( ls_report ) ).
-
-    ENDLOOP.
-
-  ENDMETHOD.
 
 ENDCLASS.

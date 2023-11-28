@@ -82,7 +82,7 @@ CLASS zclmm_ce_vh_plant IMPLEMENTATION.
 * ----------------------------------------------------------------------
     IF line_exists( lt_return[ type = 'E' ] ).
 
-      RAISE EXCEPTION NEW zcxmm_inventory_exception( it_return = lt_return ).
+*      RAISE EXCEPTION NEW zcxmm_inventory_exception( it_return = lt_return ).
 
     ENDIF.
   ENDMETHOD.

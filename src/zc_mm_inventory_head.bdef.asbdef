@@ -1,22 +1,39 @@
 projection;
-strict ( 2 );
+strict ( 1 );
+use draft;
+use side effects;
 
 define behavior for ZC_MM_INVENTORY_HEAD alias _Head
+use etag
 {
   use create;
   use update;
   use delete;
 
+  use action Edit;
+  use action Discard;
+  use action Resume;
+  use action Prepare;
+  use action Activate;
+
   use action cancelar;
   use action liberar;
 
-  use association _Item { create; }
+  use association _Item { create; with draft; }
+  use association _Log { with draft; }
 }
 
 define behavior for ZC_MM_INVENTORY_ITEM alias _Item
+use etag
 {
   use update;
   use delete;
 
-  use association _Head;
+  use association _Head { with draft; }
+}
+
+define behavior for ZC_MM_INVENTORY_LOG alias _Log
+use etag
+{
+  use association _Head { with draft; }
 }

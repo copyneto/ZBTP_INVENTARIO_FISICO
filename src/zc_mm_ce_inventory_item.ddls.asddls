@@ -22,13 +22,7 @@ define custom entity ZC_MM_CE_INVENTORY_ITEM
       @UI.facet                 : [ { id           : 'Item',
                                       purpose      : #STANDARD,
                                       type         : #IDENTIFICATION_REFERENCE,
-                                      position     : 10 },
-
-                                    { id           : 'Header',
-                                      purpose      : #STANDARD,
-                                      type         : #LINEITEM_REFERENCE,
-                                      position     : 20,
-                                      targetElement: '_Head'}]
+                                      position     : 10 }]
 
       // ------------------------------------------------------
       // Field information
@@ -202,7 +196,7 @@ define custom entity ZC_MM_CE_INVENTORY_ITEM
       @UI.identification        : [{ position: 130 }]
 
       @EndUserText.label        : 'Peso Bruto'
-      @Semantics.quantity.unitOfMeasure : 'Unit'
+      @Semantics.quantity.unitOfMeasure : 'WeightUnit'
       Weight                    : abap.quan(13,3);
 
       @EndUserText.label        : 'Unidade do peso'
@@ -312,7 +306,7 @@ define custom entity ZC_MM_CE_INVENTORY_ITEM
       @UI.lineItem              : [{ position: 170 }]
       @UI.identification        : [{ position: 170 }]
 
-      @EndUserText.label        : 'Documento do inventário físico (Ano)'
+      @EndUserText.label        : 'Ano Fiscal'
       FiscalYear                : abap.numc(4);
 
       @UI.hidden                : true

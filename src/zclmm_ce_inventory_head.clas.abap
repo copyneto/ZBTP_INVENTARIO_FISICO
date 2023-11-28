@@ -320,10 +320,10 @@ CLASS zclmm_ce_inventory_head IMPLEMENTATION.
           AND Plant        IN @ls_filter-Plant
           AND PlantName    IN @ls_filter-PlantName
           AND Description  IN @ls_filter-Description
-         ORDER BY DocumentId
-         INTO CORRESPONDING FIELDS OF TABLE @et_report
-         UP TO @iv_set_top ROWS
-         OFFSET @iv_set_skip.
+*         ORDER BY DocumentId
+         INTO CORRESPONDING FIELDS OF TABLE @et_report.
+*         UP TO @iv_set_top ROWS
+*         OFFSET @iv_set_skip.
 
     IF sy-subrc NE 0 .
       FREE et_report.

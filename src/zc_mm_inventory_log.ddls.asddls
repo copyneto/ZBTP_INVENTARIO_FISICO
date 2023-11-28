@@ -10,6 +10,7 @@ define view entity ZC_MM_INVENTORY_LOG
   key DocumentId,
   key Line,
       Msgid,
+      @ObjectModel.text.element : ['MsgtyText']
       Msgty,
       MsgtyText,
       MsgtyCrit,
@@ -20,11 +21,15 @@ define view entity ZC_MM_INVENTORY_LOG
       Msgv4,
       Message,
       @Semantics.user.createdBy: true
+      @ObjectModel.text.element : ['CreatedByName']
       CreatedBy,
+      CreatedByName,
       @Semantics.systemDateTime.createdAt: true
       CreatedAt,
       @Semantics.user.lastChangedBy: true
+      @ObjectModel.text.element : ['LastChangedByName']
       LastChangedBy,
+      LastChangedByName,
       @Semantics.systemDateTime.lastChangedAt: true
       LastChangedAt,
       @Semantics.systemDateTime.localInstanceLastChangedAt: true

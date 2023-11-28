@@ -1,5 +1,5 @@
 unmanaged implementation in class zclmm_ce_inventory unique;
-strict ( 2 ); //Uncomment this line in order to enable strict mode 2. The strict mode has two variants (strict(1), strict(2)) and is prerequisite to be future proof regarding syntax and to be able to release your BO.
+strict ( 1 ); //Uncomment this line in order to enable strict mode 2. The strict mode has two variants (strict(1), strict(2)) and is prerequisite to be future proof regarding syntax and to be able to release your BO.
 //with draft;
 
 define behavior for ZC_MM_CE_INVENTORY_HEAD alias _Head
@@ -14,7 +14,6 @@ authorization master ( instance )
   update ( features : instance );
   delete ( features : instance );
 
-  association _HeadInfo { }
   association _Item { create ( features : instance ); } // with draft; }
   association _Log { } // with draft; }
 
@@ -29,8 +28,8 @@ authorization master ( instance )
 
   side effects
   {
-    action cancelar affects field *;
-    action liberar affects field *;
+    action cancelar affects entity _Log, entity _Item, field *;
+    action liberar affects entity _Log, entity _Item, field *;
   }
 
   field ( mandatory )
@@ -46,32 +45,6 @@ authorization master ( instance )
   StatusId,
   StatusText,
   StatusCrit,
-  CreatedBy,
-  CreatedAt,
-  LastChangedBy,
-  LastChangedAt,
-  LocalLastChangedAt;
-
-}
-
-define behavior for ZC_MM_CE_INVENTORY_HEAD_INFO alias _HeadInfo
-lock dependent by _Head
-authorization dependent by _Head
-etag master LastChangedAt
-{
-  association _Head;
-
-  field ( readonly )
-  DocumentId,
-  DocumentNo,
-  CountId,
-  CountDate,
-  StatusId,
-  StatusText,
-  StatusCrit,
-  Plant,
-  PlantName,
-  Description,
   CreatedBy,
   CreatedAt,
   LastChangedBy,

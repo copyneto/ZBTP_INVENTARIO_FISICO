@@ -31,26 +31,8 @@ define view entity ZI_MM_CE_INVENTORY_ITEM
       _Item.storagelocationname       as StorageLocationName,
       _Item.batch                     as Batch,
       @Semantics.quantity.unitOfMeasure: 'Unit'
-      _Item.quantitystock             as QuantityStock,
-      @Semantics.quantity.unitOfMeasure: 'Unit'
       _Item.quantitycount             as QuantityCount,
-      @Semantics.quantity.unitOfMeasure: 'Unit'
-      _Item.quantitycurrent           as QuantityCurrent,
-      @Semantics.quantity.unitOfMeasure: 'Unit'
-      _Item.balance                   as Balance,
-      @Semantics.quantity.unitOfMeasure: 'Unit'
-      _Item.balancecurrent            as BalanceCurrent,
       _Item.unit                      as Unit,
-      @Semantics.amount.currencyCode: 'Currency'
-      _Item.pricestock                as PriceStock,
-      @Semantics.amount.currencyCode: 'Currency'
-      _Item.pricecount                as PriceCount,
-      @Semantics.amount.currencyCode: 'Currency'
-      _Item.pricediff                 as PriceDiff,
-      _Item.currency                  as Currency,
-      @Semantics.quantity.unitOfMeasure : 'WeightUnit'
-      _Item.weight                    as Weight,
-      _Item.weightunit                as WeightUnit,
       _Item.physicalinventorydocument as PhysicalInventoryDocument,
       _Item.fiscalyear                as FiscalYear,
       @Semantics.user.createdBy: true

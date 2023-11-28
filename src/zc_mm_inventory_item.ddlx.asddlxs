@@ -3,10 +3,12 @@
 @UI.headerInfo.typeName: 'Item'
 @UI.headerInfo.typeNamePlural: 'Itens'
 @UI.headerInfo.title.type: #STANDARD
+@UI.headerInfo.typeImageUrl: 'sap-icon://sap-box'
 
 @UI.lineItem: [{criticality: 'StatusCrit'}]
 
-@UI.presentationVariant: [{sortOrder: [{by: 'Material', direction: #ASC }]}]
+@UI.presentationVariant: [{ visualizations: [ { type: #AS_LINEITEM }],
+                            sortOrder: [{by: 'Material', direction: #ASC }]}]
 
 annotate view ZC_MM_INVENTORY_ITEM with
 {
@@ -17,20 +19,7 @@ annotate view ZC_MM_INVENTORY_ITEM with
   @UI.facet                 : [ { id           : 'Item',
                                   purpose      : #STANDARD,
                                   type         : #IDENTIFICATION_REFERENCE,
-                                  position     : 10 },
-
-                                { id           : 'Header',
-                                  purpose      : #STANDARD,
-                                  type         : #LINEITEM_REFERENCE,
-                                  position     : 20,
-                                  targetElement: '_Head'}]
-
-  // ------------------------------------------------------
-  //Button information
-  // ------------------------------------------------------
-
-  @UI.lineItem              : [{ position: 10, type: #FOR_ACTION, dataAction: 'refresh', label: 'Atualizar valores' }]
-  @UI.identification        : [{ position: 10, type: #FOR_ACTION, dataAction: 'refresh', label: 'Atualizar valores' }]
+                                  position     : 10 }]
 
   // ------------------------------------------------------
   // Field information
@@ -46,13 +35,41 @@ annotate view ZC_MM_INVENTORY_ITEM with
   @EndUserText.label        : 'ID do item do documento'
   DocumentItemId;
 
+  @UI.lineItem              : [{ position: 170, criticality: 'StatusCrit' }]
+  @UI.identification        : [{ position: 170, criticality: 'StatusCrit' }]
+
+  @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_VH_COUNTING_STATUS', element: 'Status' },
+                                       qualifier: 'ZI_MM_VH_COUNTING_STATUS', useForValidation: true  }]
+
+  @EndUserText.label        : 'Status'
+  @UI.textArrangement: #TEXT_ONLY
+  StatusId;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'Descrição do status'
+  StatusText;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'Criticalidade do status'
+  StatusCrit;
+
+  @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_MATERIAL', element: 'Material' },
+                                       additionalBinding: [{ element: 'MaterialName', localElement: 'MaterialName' }],
+                                       qualifier: 'ZI_MM_CE_VH_MATERIAL', useForValidation: true  }]
+
   @UI.lineItem              : [{ position: 10 }]
   @UI.identification        : [{ position: 10 }]
 
   @EndUserText.label        : 'Material'
   Material;
 
-  @UI.hidden: true
+  @UI.hidden                : true
+
+  @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_MATERIAL', element: 'MaterialName' },
+                                       additionalBinding: [{ element: 'Material', localElement: 'Material' }],
+                                       qualifier: 'ZI_MM_CE_VH_MATERIAL', useForValidation: true  }]
 
   @EndUserText.label        : 'Nome do Material'
   MaterialName;
@@ -60,10 +77,18 @@ annotate view ZC_MM_INVENTORY_ITEM with
   @UI.lineItem              : [{ position: 30 }]
   @UI.identification        : [{ position: 30 }]
 
+  @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_STORAGE_LOCATION', element: 'StorageLocation' },
+                                       additionalBinding: [{ element: 'StorageLocationName', localElement: 'StorageLocationName' }],
+                                       qualifier: 'ZI_MM_CE_VH_STORAGE_LOCATION', useForValidation: true  }]
+
   @EndUserText.label        : 'Depósito'
   StorageLocation;
 
-  @UI.hidden: true
+  @UI.hidden                : true
+
+  @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_STORAGE_LOCATION', element: 'StorageLocationName' },
+                                       additionalBinding: [{ element: 'StorageLocation', localElement: 'StorageLocation' }],
+                                       qualifier: 'ZI_MM_CE_VH_STORAGE_LOCATION', useForValidation: true  }]
 
   @EndUserText.label        : 'Nome do Depósito'
   StorageLocationName;
@@ -72,13 +97,29 @@ annotate view ZC_MM_INVENTORY_ITEM with
   @UI.identification        : [{ position: 40 }]
 
   @EndUserText.label        : 'Número do lote'
+  @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_BATCH', element: 'Batch' },
+                                       additionalBinding: [{ element: 'Material', localElement: 'Material'},
+                                                           { element: 'MaterialName', localElement: 'MaterialName'}],
+                                       qualifier: 'ZI_MM_CE_VH_BATCH', useForValidation: true  }]
   Batch;
 
-  @UI.lineItem              : [{ position: 50 }]
-  @UI.identification        : [{ position: 50 }]
+  @UI.lineItem              : [{ position: 51, criticality: 'QuantityStockCrit', criticalityRepresentation: #WITHOUT_ICON }]
+  @UI.identification        : [{ position: 51, criticality: 'QuantityStockCrit', criticalityRepresentation: #WITHOUT_ICON }]
+  @UI.textArrangement       : #TEXT_ONLY
 
   @EndUserText.label        : 'Quantidade em Estoque'
   QuantityStock;
+
+  @UI.lineItem              : [{ position: 50, criticality: 'QuantityStockCrit' }]
+  @UI.identification        : [{ position: 50, criticality: 'QuantityStockCrit' }]
+
+  @EndUserText.label        : 'Status do Estoque'
+  QuantityStockText;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'Quantidade em Estoque (Criticalidade)'
+  QuantityStockCrit;
 
   @UI.lineItem              : [{ position: 60 }]
   @UI.identification        : [{ position: 60 }]
@@ -86,11 +127,16 @@ annotate view ZC_MM_INVENTORY_ITEM with
   @EndUserText.label        : 'Quantidade da contagem'
   QuantityCount;
 
-  @UI.lineItem              : [{ position: 70 }]
-  @UI.identification        : [{ position: 70 }]
+  @UI.lineItem              : [{ position: 70, criticality: 'QuantityCurrentCrit', criticalityRepresentation: #WITHOUT_ICON }]
+  @UI.identification        : [{ position: 70, criticality: 'QuantityCurrentCrit', criticalityRepresentation: #WITHOUT_ICON }]
 
   @EndUserText.label        : 'Quantidade estoque atual'
   QuantityCurrent;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'Quantidade estoque atual (Criticalidade)'
+  QuantityCurrentCrit;
 
   @UI.lineItem              : [{ position: 80 }]
   @UI.identification        : [{ position: 80 }]
@@ -137,142 +183,153 @@ annotate view ZC_MM_INVENTORY_ITEM with
   @EndUserText.label        : 'Unidade do peso'
   WeightUnit;
 
-//  @UI.lineItem              : [{ position: 140 }]
-//  @UI.identification        : [{ position: 140 }]
-//
-//  @EndUserText.label        : 'Hierarquia de produtos'
-//  producthierarchy;
-//
-//  @UI.lineItem              : [{ position: 145 }]
-//  @UI.identification        : [{ position: 145 }]
-//
-//  @EndUserText.label        : 'Centro de Lucro'
-//  profitcenter;
+  @UI.hidden                : true
 
-  @UI.lineItem              : [{ position: 150, semanticObjectAction: 'displayList', type: #WITH_INTENT_BASED_NAVIGATION }]
-  @UI.identification        : [{ position: 150, semanticObjectAction: 'displayList', type: #WITH_INTENT_BASED_NAVIGATION }]
+  @UI.lineItem              : [{ position: 140 }]
+  @UI.identification        : [{ position: 140 }]
+
+  @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_PRODUCT_HIERARCHY', element: 'ProductHierarchy' },
+                                       qualifier: 'ZI_MM_CE_VH_PRODUCT_HIERARCHY', useForValidation: true  }]
+
+  @EndUserText.label        : 'Hierarquia de produtos'
+  ProductHierarchy;
+
+  @UI.lineItem              : [{ position: 180, type:#AS_DATAPOINT, criticality: 'AccuracyCrit', criticalityRepresentation: #WITHOUT_ICON }]
+  @UI.identification        : [{ position: 180, type:#AS_DATAPOINT, criticality: 'AccuracyCrit', criticalityRepresentation: #WITHOUT_ICON }]
+  @UI.dataPoint             : { targetValue: 100, visualization: #PROGRESS, criticality: 'AccuracyCrit', criticalityRepresentation: #WITHOUT_ICON }
+
+  @EndUserText.label        : 'Acuracidade'
+  Accuracy;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'Acuracidade (Criticalidade)'
+  AccuracyCrit;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'Documento do material (Ano)'
+  MaterialDocumentYear;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'Documento do material'
+  MaterialDocument;
+
+  @UI.lineItem              : [{ position: 200 }]
+  @UI.identification        : [{ position: 200 }]
+
+  @EndUserText.label        : 'Data de lançamento'
+  PostingDate;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'Nº Doc. Entrada Saída'
+  BR_NotaFiscal;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'N° Doc. Contabilização'
+  AccountingDocument;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'N° Doc. Contabilização (Ano)'
+  AccountingDocumentYear;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'Doc Contabilização Est.'
+  InvoiceReference;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'Data Doc. Contabilização'
+  DocumentDate;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'Número NF-e'
+  BR_NFeNumber;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'Nota fiscal cancelada'
+  BR_NFIsCanceled;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'Status NFe'
+  BR_NFeDocumentStatus;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'Descrição Status NFe'
+  BR_NFeDocumentStatusText;
+
+  @EndUserText.label        : 'Empresa'
+  CompanyCode;
+
+  @UI.hidden                : true
+
+  @EndUserText.label        : 'Nome da Empresa'
+  CompanyCodeName;
+
+  @UI.lineItem              : [{ position: 160, semanticObjectAction: 'displayFactSheet', type: #WITH_INTENT_BASED_NAVIGATION }]
+  @UI.identification        : [{ position: 160, semanticObjectAction: 'displayFactSheet', type: #WITH_INTENT_BASED_NAVIGATION }]
   @Consumption.semanticObject :'PhysicalInventoryDocument'
 
   @EndUserText.label        : 'Documento do inventário físico'
   PhysicalInventoryDocument;
 
-  @UI.lineItem              : [{ position: 160 }]
-  @UI.identification        : [{ position: 160 }]
+  @UI.lineItem              : [{ position: 170 }]
+  @UI.identification        : [{ position: 170 }]
 
-  @EndUserText.label        : 'Exercício'
+  @EndUserText.label        : 'Ano Fiscal'
   FiscalYear;
 
-  @UI.lineItem              : [{ position: 170, criticality: 'StatusCrit' }]
-  @UI.identification        : [{ position: 170, criticality: 'StatusCrit' }]
+  @UI.hidden                : true
 
-  @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_VH_COUNTING_STATUS', element: 'Status' }, 
-                                       qualifier: 'ZI_MM_VH_COUNTING_STATUS', useForValidation: true  }]
-                                           
-  @EndUserText.label        : 'Status'
-  StatusId;
+  @EndUserText.label        : 'Referência Externa'
+  ExternalReference;
 
-  @UI.hidden: true
+  @UI.lineItem              : [{ position: 150 }]
+  @UI.identification        : [{ position: 150 }]
 
-  @EndUserText.label        : 'Descrição do Status'
-  StatusText;
+  @EndUserText.label        : 'Centro de Lucro'
+  @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_PROFIT_CENTER', element: 'ProfitCenter' },
+                                       qualifier: 'ZI_MM_CE_VH_PROFIT_CENTER', useForValidation: true  }]
+  ProfitCenter;
 
-  @UI.hidden: true
-
-  @EndUserText.label        : 'Criticalidade do Status'
-  StatusCrit;
-
-  @UI.lineItem              : [{ position: 180, type:#AS_DATAPOINT }]
-  @UI.identification        : [{ position: 180, type:#AS_DATAPOINT }]
-  @UI.dataPoint             : { targetValue: 100, visualization: #PROGRESS }
-
-  @EndUserText.label        : 'Acuracidade'
-  Accuracy;
-
-//  @UI.lineItem              : [{ position: 190 }]
-//  @UI.identification        : [{ position: 190 }]
-//
-//  @EndUserText.label        : 'Documento do material'
-//  materialdocument;
-//
-//  @EndUserText.label        : 'Documento do material (Ano)'
-//  materialdocumentyear;
-//
-//  @UI.lineItem              : [{ position: 190 }]
-//  @UI.identification        : [{ position: 190 }]
-//
-//  @EndUserText.label        : 'Data de lançamento'
-//  postingdate;
-//
-//  @UI.lineItem              : [{ position: 190 }]
-//  @UI.identification        : [{ position: 190 }]
-//
-//  @EndUserText.label        : 'Nº Doc. Entrada Saída'
-//  br_notafiscal;
-//
-//  @UI.lineItem              : [{ position: 190 }]
-//  @UI.identification        : [{ position: 190 }]
-//
-//  @EndUserText.label        : 'N° Doc. Contabilização'
-//  supplierinvoice;
-//
-//  @EndUserText.label        : 'N° Doc. Contabilização (Ano)'
-//  supplierinvoiceyear;
-//
-//  @EndUserText.label        : 'Doc Contabilização Est.'
-//  invoicereference;
-//
-//  @UI.lineItem              : [{ position: 190 }]
-//  @UI.identification        : [{ position: 190 }]
-//
-//  @EndUserText.label        : 'Data Doc. Contabilização'
-//  documentdate;
-//
-//  @EndUserText.label        : 'Número NF-e'
-//  br_nfenumber;
-//
-//  @EndUserText.label        : 'Nota fiscal cancelada'
-//  br_nfiscanceled;
-//
-//  @EndUserText.label        : 'Status NFe'
-//  br_nfedocumentstatus;
-//
-//  @UI.hidden: true
-//
-//  @EndUserText.label        : 'Descrição Status NFe'
-//  br_nfedocumentstatustext;
-
-  @EndUserText.label        : 'Empresa'
-  CompanyCode;
-
-  @UI.hidden: true
-
-  @EndUserText.label        : 'Nome da Empresa'
-  CompanyCodeName;
-
-//  @EndUserText.label        : 'Referência Externa'
-//  externalreference;
-
-  @UI.hidden: true
+  @UI.hidden                : true
 
   @EndUserText.label        : 'Criado por'
   CreatedBy;
-
+  
   @UI.hidden: true
+  
+  CreatedByName;
+
+  @UI.hidden                : true
 
   @EndUserText.label        : 'Criado em'
   CreatedAt;
 
-  @UI.hidden: true
+  @UI.hidden                : true
 
   @EndUserText.label        : 'Modificado por'
   LastChangedBy;
-
+  
   @UI.hidden: true
+  
+  LastChangedByName;
+
+  @UI.hidden                : true
 
   @EndUserText.label        : 'Modificado em'
   LastChangedAt;
 
-  @UI.hidden: true
+  @UI.hidden                : true
 
   @EndUserText.label        : 'Registro'
   LocalLastChangedAt;

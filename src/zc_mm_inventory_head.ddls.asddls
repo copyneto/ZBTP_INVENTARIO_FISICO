@@ -2,7 +2,7 @@
 @AccessControl.authorizationCheck: #NOT_REQUIRED
 @Metadata.allowExtensions: true
 
-@ObjectModel.semanticKey: ['DocumentNo']
+@ObjectModel.semanticKey: ['DocumentId']
 
 define root view entity ZC_MM_INVENTORY_HEAD
   provider contract transactional_query
@@ -21,12 +21,17 @@ define root view entity ZC_MM_INVENTORY_HEAD
       Plant,
       PlantName,
       Description,
+      UpdateHidden,      
       @Semantics.user.createdBy: true
+      @ObjectModel.text.element : ['CreatedByName']
       CreatedBy,
+      CreatedByName,
       @Semantics.systemDateTime.createdAt: true
       CreatedAt,
       @Semantics.user.lastChangedBy: true
+      @ObjectModel.text.element : ['LastChangedByName']
       LastChangedBy,
+      LastChangedByName ,
       @Semantics.systemDateTime.lastChangedAt: true
       LastChangedAt,
       @Semantics.systemDateTime.localInstanceLastChangedAt: true

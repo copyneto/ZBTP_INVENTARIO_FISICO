@@ -14,13 +14,12 @@ define root view entity ZI_MM_CE_INVENTORY_HEAD
        _Head.statustext         as StatusText,
 
        case _Head.statusid
-       when '00' then 0    -- 'Criado'
-       when '01' then 2    -- 'Pendente'
-       when '02' then 3    -- 'Liberado'
-       when '03' then 1    -- 'Cancelado'
-       when '04' then 3    -- 'Concluido'
+       when '00' then 2    -- Pendente
+       when '01' then 3    -- Liberado
+       when '02' then 3    -- Concluido
+       when '03' then 1    -- Cancelado
                  else 0
-       end                      as StatusCrit,
+       end               as StatusCrit,
 
        _Head.plant              as Plant,
        _Head.plantname          as PlantName,

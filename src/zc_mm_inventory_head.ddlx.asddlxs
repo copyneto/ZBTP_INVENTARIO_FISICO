@@ -2,11 +2,14 @@
 @UI.headerInfo.typeName: 'Cockpit de Inventário'
 @UI.headerInfo.typeNamePlural: 'Cockpit de Inventário'
 @UI.headerInfo.title.type: #STANDARD
-@UI.headerInfo.title.value: 'Description'
+@UI.headerInfo.title.label: 'Inventário'
+@UI.headerInfo.title.value: 'DocumentNo' 
+@UI.headerInfo.typeImageUrl: 'sap-icon://measurement-document'
 
 @UI.lineItem: [{criticality: 'StatusCrit'}]
-
-@UI.presentationVariant: [{sortOrder: [{by: 'DocumentNo', direction: #DESC }]}]
+@UI.updateHidden: #(UpdateHidden)
+@UI.presentationVariant: [{sortOrder: [{ by: 'DocumentNo', direction: #DESC }],
+                           visualizations: [{type: #AS_LINEITEM}]}]
 
 annotate view ZC_MM_INVENTORY_HEAD with
 {
@@ -18,13 +21,13 @@ annotate view ZC_MM_INVENTORY_HEAD with
                                  purpose        : #HEADER,
                                  type           : #DATAPOINT_REFERENCE,
                                  targetQualifier: 'DataPointCountId',
-                                 position       : 10 },
+                                 position       : 01 },
 
                                { id             : 'DataPointStatusId',
                                  purpose        : #HEADER,
                                  type           : #DATAPOINT_REFERENCE,
                                  targetQualifier: 'DataPointStatusId',
-                                 position       : 20 },
+                                 position       : 02 },
 
                                { id             : 'Dados',
                                  purpose        : #STANDARD,
@@ -38,7 +41,7 @@ annotate view ZC_MM_INVENTORY_HEAD with
                                  parentId       : 'Dados',
                                  type           : #FIELDGROUP_REFERENCE,
                                  targetQualifier: 'DadosGeral',
-                                 position       : 20 },
+                                 position       : 11 },
 
                                { id             : 'DadosRegistro',
                                  purpose        : #STANDARD,
@@ -46,28 +49,36 @@ annotate view ZC_MM_INVENTORY_HEAD with
                                  parentId       : 'Dados',
                                  type           : #FIELDGROUP_REFERENCE,
                                  targetQualifier: 'DadosRegistro',
-                                 position       : 40 },
+                                 position       : 12 },
 
                                { id             : 'Itens',
                                  purpose        : #STANDARD,
                                  type           : #LINEITEM_REFERENCE,
                                  label          : 'Itens',
-                                 position       : 50,
-                                 targetElement  : '_Item'}
+                                 position       : 20,
+                                 targetElement  : '_Item'},
+
+                               { id             : 'Log',
+                                 purpose        : #STANDARD,
+                                 type           : #LINEITEM_REFERENCE,
+                                 label          : 'Logs',
+                                 position       : 30,
+                                 targetElement  : '_Log'}
               ]
 
   // ------------------------------------------------------
   //Button information
   // ------------------------------------------------------
+
   @UI.lineItem              : [{ position: 10, type: #FOR_ACTION, dataAction: 'liberar', label: 'Liberar' },
                                { position: 20, type: #FOR_ACTION, dataAction: 'cancelar', label: 'Encerrar' }]
 
   @UI.identification        : [{ position: 10, type: #FOR_ACTION, dataAction: 'liberar', label: 'Liberar' },
                                { position: 20, type: #FOR_ACTION, dataAction: 'cancelar', label: 'Encerrar' }]
 
-      // ------------------------------------------------------
-      // Field information
-      // ------------------------------------------------------
+  // ------------------------------------------------------
+  // Field information
+  // ------------------------------------------------------
 
   @UI.hidden                : true
 
@@ -78,7 +89,7 @@ annotate view ZC_MM_INVENTORY_HEAD with
   @UI.lineItem              : [{ position: 10 }]
   @UI.fieldGroup            : [{ position: 10, qualifier: 'DadosGeral' }]
 
-  @EndUserText.label        : 'Número do documento'
+  @EndUserText.label        : 'Doc. Pré Inventário'
   DocumentNo;
 
   @UI.selectionField        : [{ position: 20 }]
@@ -101,10 +112,11 @@ annotate view ZC_MM_INVENTORY_HEAD with
 
   @UI.selectionField        : [{ position: 40 } ]
   @UI.lineItem              : [{ position: 40, criticality: 'StatusCrit' } ]
-  @UI.fieldGroup            : [{ position: 40, qualifier: 'DadosGeral' }]
+  @UI.fieldGroup            : [{ position: 40, criticality: 'StatusCrit' , qualifier: 'DadosGeral' }]
   @UI.dataPoint             : { qualifier: 'DataPointStatusId', title: 'Status', criticality: 'StatusCrit' }
 
   @EndUserText.label        : 'Status'
+  @UI.textArrangement: #TEXT_ONLY
   StatusId;
 
   @UI.hidden                : true
@@ -121,117 +133,20 @@ annotate view ZC_MM_INVENTORY_HEAD with
   @UI.lineItem              : [{ position: 45 }]
   @UI.fieldGroup            : [{ position: 30, qualifier: 'DadosGeral' }]
 
+  @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_PLANT', element: 'Plant' } }]
+//                                       additionalBinding: [{ element: 'PlantName', localElement: 'PlantName' }],
+//                                       qualifier: 'ZI_MM_CE_VH_PLANT', useForValidation: true  }]
+
   @EndUserText.label        : 'Centro'
   Plant;
+
+  @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_PLANT', element: 'PlantName' },
+                                       additionalBinding: [{ element: 'Plant', localElement: 'Plant' }],
+                                       qualifier: 'ZI_MM_CE_VH_PLANT', useForValidation: true  }]
 
   @UI.hidden                : true
   @EndUserText.label        : 'Nome do centro'
   PlantName;
-
-//  @UI.selectionField        : [{ position: 110 }]
-//  @UI.lineItem              : [{ position: 110 }]
-//  @UI.fieldGroup            : [{ position: 90, qualifier: 'DadosGeral' }]
-//
-//  @EndUserText.label        : 'Documento do material (Ano)'
-//  MaterialDocumentYear;
-//
-//  @EndUserText.label        : 'Documento do material'
-//  MaterialDocument;
-//
-//  @UI.selectionField        : [{ position: 100 }]
-//  @UI.lineItem              : [{ position: 100 }]
-//  @UI.fieldGroup            : [{ position: 80, qualifier: 'DadosGeral' }]
-//
-//  @EndUserText.label        : 'Data de lançamento'
-//  PostingDate;
-//
-//  @UI.selectionField        : [{ position: 120 }]
-//  @UI.lineItem              : [{ position: 120 }]
-//  @UI.fieldGroup            : [{ position: 100, qualifier: 'DadosGeral' }]
-//
-//  @EndUserText.label        : 'Nº Doc. Entrada Saída'
-//  BR_NotaFiscal;
-//
-//  @UI.selectionField        : [{ position: 130 }]
-//  @UI.lineItem              : [{ position: 130 }]
-//  @UI.fieldGroup            : [{ position: 110, qualifier: 'DadosGeral' }]
-//
-//  @EndUserText.label        : 'N° Doc. Contabilização'
-//  SupplierInvoice;
-//
-//  @EndUserText.label        : 'N° Doc. Contabilização (Ano)'
-//  SupplierInvoiceYear;
-//
-//  @UI.selectionField        : [{ position: 200 }]
-//  @UI.lineItem              : [{ position: 200 }]
-//  @UI.fieldGroup            : [{ position: 170, qualifier: 'DadosGeral' }]
-//
-//  @EndUserText.label        : 'Doc Contabilização Est.'
-//  InvoiceReference;
-//
-//  @UI.selectionField        : [{ position: 190 }]
-//  @UI.lineItem              : [{ position: 190 }]
-//  @UI.fieldGroup            : [{ position: 160, qualifier: 'DadosGeral' }]
-//
-//  @EndUserText.label        : 'Data Doc. Contabilização'
-//  DocumentDate;
-//
-//  @UI.selectionField        : [{ position: 160 }]
-//  @UI.lineItem              : [{ position: 160 }]
-//  @UI.fieldGroup            : [{ position: 140, qualifier: 'DadosGeral' }]
-//
-//  @EndUserText.label        : 'Número NF-e'
-//  BR_NFeNumber;
-//
-//  @UI.selectionField        : [{ position: 170 }]
-//  @UI.lineItem              : [{ position: 170 }]
-//  @UI.fieldGroup            : [{ position: 150, qualifier: 'DadosGeral' }]
-//
-//  @EndUserText.label        : 'Nota fiscal cancelada'
-//  BR_NFIsCanceled;
-//
-//  @UI.selectionField        : [{ position: 180 }]
-//  @UI.lineItem              : [{ position: 180 }]
-//  @UI.fieldGroup            : [{ position: 150, qualifier: 'DadosGeral' }]
-//
-//  @EndUserText.label        : 'Status NFe'
-//  BR_NFeDocumentStatus;
-//
-//  @UI.hidden                : true
-//  @EndUserText.label        : 'Descrição Status NFe'
-//  BR_NFeDocumentStatusText;
-//
-//  @UI.selectionField        : [{ position: 150 }]
-//  @UI.lineItem              : [{ position: 150 }]
-//  @UI.fieldGroup            : [{ position: 130, qualifier: 'DadosGeral' }]
-//
-//  @EndUserText.label        : 'Empresa'
-//  CompanyCode;
-//
-//  @UI.hidden                : true
-//  @EndUserText.label        : 'Nome da Empresa'
-//  CompanyCodeName;
-//
-//  @UI.selectionField        : [{ position: 140 }]
-//  @UI.lineItem              : [{ position: 140 }]
-//  @UI.fieldGroup            : [{ position: 120, qualifier: 'DadosGeral' }]
-//
-//  @EndUserText.label        : 'Documento do inventário físico'
-//  PhysicalInventoryDocument;
-//
-//  @UI.selectionField        : [{ position: 210 }]
-//  @UI.lineItem              : [{ position: 210 }]
-//  @UI.fieldGroup            : [{ position: 180, qualifier: 'DadosGeral' }]
-//
-//  @EndUserText.label        : 'Documento do inventário físico (Ano)'
-//  FiscalYear;
-//
-//  @UI.selectionField        : [{ position: 220 }]
-//  @UI.lineItem              : [{ position: 220 }]
-//  @UI.fieldGroup            : [{ position: 190, qualifier: 'DadosGeral' }]
-//
-//  @EndUserText.label        : 'Referência Externa'
-//  ExternalReference;
 
   @UI.multiLineText         : true
   @UI.lineItem              : [{ position: 70 } ]
@@ -244,6 +159,10 @@ annotate view ZC_MM_INVENTORY_HEAD with
 
   @EndUserText.label        : 'Criado por'
   CreatedBy;
+  
+  @UI.hidden: true
+  
+  CreatedByName;
 
   @UI.fieldGroup            : [{ position: 20, qualifier: 'DadosRegistro' }]
 
@@ -254,6 +173,10 @@ annotate view ZC_MM_INVENTORY_HEAD with
 
   @EndUserText.label        : 'Modificado por'
   LastChangedBy;
+  
+  @UI.hidden: true
+  
+  LastChangedByName;
 
   @UI.fieldGroup            : [{ position: 40, qualifier: 'DadosRegistro' }]
 

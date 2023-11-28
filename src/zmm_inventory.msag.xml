@@ -32,6 +32,18 @@
      <MSGNR>003</MSGNR>
      <TEXT>Estoque não encontrado.</TEXT>
     </T100>
+    <T100>
+     <SPRSL>P</SPRSL>
+     <ARBGB>ZMM_INVENTORY</ARBGB>
+     <MSGNR>004</MSGNR>
+     <TEXT>Ocorreram erros na execução. Verifique o Log.</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>P</SPRSL>
+     <ARBGB>ZMM_INVENTORY</ARBGB>
+     <MSGNR>005</MSGNR>
+     <TEXT>Liberado com suesso.</TEXT>
+    </T100>
    </T100>
   </asx:values>
  </asx:abap>

@@ -1,25 +1,3 @@
-CLASS lcl_headinfo DEFINITION INHERITING FROM cl_abap_behavior_handler.
-
-  PRIVATE SECTION.
-
-    METHODS read FOR READ
-      IMPORTING keys FOR READ _HeadInfo RESULT result.
-
-    METHODS rba_Head FOR READ
-      IMPORTING keys_rba FOR READ _HeadInfo\_Head FULL result_requested RESULT result LINK association_links.
-
-ENDCLASS.
-
-CLASS lcl_headinfo IMPLEMENTATION.
-
-  METHOD read.
-  ENDMETHOD.
-
-  METHOD rba_Head.
-  ENDMETHOD.
-
-ENDCLASS.
-
 CLASS lcl_Head DEFINITION INHERITING FROM cl_abap_behavior_handler.
   PRIVATE SECTION.
     TYPES:
@@ -63,8 +41,6 @@ CLASS lcl_Head DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
     METHODS liberar FOR MODIFY
       IMPORTING keys FOR ACTION _Head~liberar.
-    METHODS rba_Headinfo FOR READ
-      IMPORTING keys_rba FOR READ _Head\_Headinfo FULL result_requested RESULT result LINK association_links.
 
 *    METHODS earlynumbering_create FOR NUMBERING
 *      IMPORTING entities FOR CREATE _Head.
@@ -317,10 +293,6 @@ CLASS lcl_Head IMPLEMENTATION.
 
   ENDMETHOD.
 
-  METHOD rba_Headinfo.
-    RETURN.
-  ENDMETHOD.
-
 ENDCLASS.
 
 CLASS lcl_Item DEFINITION INHERITING FROM cl_abap_behavior_handler.
@@ -328,6 +300,9 @@ CLASS lcl_Item DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
     METHODS get_instance_features FOR INSTANCE FEATURES
       IMPORTING keys REQUEST requested_features FOR _Item RESULT result.
+
+    METHODS create FOR MODIFY
+      IMPORTING entities FOR CREATE _Item.
 
     METHODS update FOR MODIFY
       IMPORTING entities FOR UPDATE _Item.
@@ -341,7 +316,9 @@ CLASS lcl_Item DEFINITION INHERITING FROM cl_abap_behavior_handler.
     METHODS rba_Head FOR READ
       IMPORTING keys_rba FOR READ _Item\_Head FULL result_requested RESULT result LINK association_links.
 
+
 ENDCLASS.
+
 
 CLASS lcl_Item IMPLEMENTATION.
 
@@ -431,6 +408,10 @@ CLASS lcl_Item IMPLEMENTATION.
     RETURN.
   ENDMETHOD.
 
+  METHOD create.
+    RETURN.
+  ENDMETHOD.
+
 ENDCLASS.
 
 CLASS lcl_Log DEFINITION INHERITING FROM cl_abap_behavior_handler.
@@ -493,7 +474,7 @@ CLASS lcl_ZC_MM_CE_INVENTORY_HEAD IMPLEMENTATION.
 * ---------------------------------------------------------------------
 * Insere/atualiza/remove os registros
 * ---------------------------------------------------------------------
-    IF lt_return IS NOT INITIAL.
+    IF NOT line_exists( lt_return[ type = 'E' ] ).
       lo_behavior->commit( ).
     ENDIF.
 

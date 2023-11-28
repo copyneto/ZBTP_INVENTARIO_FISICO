@@ -2,11 +2,11 @@
 "BASEINFO":
 {
 "FROM":
-[],
-"ASSOCIATED":
 [
-"ZC_MM_CE_INVENTORY_HEAD"
+"I_USER"
 ],
+"ASSOCIATED":
+[],
 "BASE":
 [],
 "ANNO_REF":

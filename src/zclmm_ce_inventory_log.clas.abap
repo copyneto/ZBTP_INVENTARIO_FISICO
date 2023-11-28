@@ -333,10 +333,10 @@ CLASS zclmm_ce_inventory_log IMPLEMENTATION.
           AND Msgv3      IN @ls_filter-Msgv3
           AND Msgv4      IN @ls_filter-Msgv4
           AND Message    IN @ls_filter-Message
-         ORDER BY DocumentId, Line
-         INTO CORRESPONDING FIELDS OF TABLE @et_report
-         UP TO @iv_set_top ROWS
-         OFFSET @iv_set_skip.
+*         ORDER BY DocumentId, Line
+         INTO CORRESPONDING FIELDS OF TABLE @et_report.
+*         UP TO @iv_set_top ROWS
+*         OFFSET @iv_set_skip.
 
     IF sy-subrc NE 0 .
       FREE et_report.

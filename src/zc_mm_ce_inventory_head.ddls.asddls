@@ -4,7 +4,7 @@
 @UI.headerInfo.title.type: #STANDARD
 @UI.headerInfo.title.value: 'Description'
 @Metadata.allowExtensions: true
-@UI.headerInfo.typeImageUrl: 'sap-icon://inventory'
+@UI.headerInfo.typeImageUrl: 'sap-icon://measurement-document'
 
 @ObjectModel.query.implementedBy: 'ABAP:ZCLMM_CE_INVENTORY_HEAD'
 
@@ -37,41 +37,21 @@ define root custom entity ZC_MM_CE_INVENTORY_HEAD
                                type           : #COLLECTION,
                                label          : 'Documento',
                                position       : 10 },
-                               
                              { id             : 'DadosGeral',
                                purpose        : #STANDARD,
+                               label          : 'Dados Gerais',
                                parentId       : 'Dados',
                                type           : #FIELDGROUP_REFERENCE,
                                targetQualifier: 'DadosGeral',
                                position       : 11 },
-                               
-//                             { id             : 'Dados',
-//                               purpose        : #STANDARD,
-//                               type           : #COLLECTION,
-//                               label          : 'Documento',
-//                               position       : 10 },
-//                             { id             : 'DadosGeral',
-//                               purpose        : #STANDARD,
-//                               label          : 'Dados Gerais',
-//                               parentId       : 'Dados',
-//                               type           : #FIELDGROUP_REFERENCE,
-//                               targetQualifier: 'DadosGeral',
-//                               position       : 11 },
-//
-//                             { id             : 'DadosRegistro',
-//                               purpose        : #STANDARD,
-//                               label          : 'Dados de Modificação',
-//                               parentId       : 'Dados',
-//                               type           : #FIELDGROUP_REFERENCE,
-//                               targetQualifier: 'DadosRegistro',
-//                               position       : 12 },
 
-                             { id             : 'Info',
+                             { id             : 'DadosRegistro',
                                purpose        : #STANDARD,
-                               type           : #LINEITEM_REFERENCE,
-                               label          : 'Dados Gerais',
-                               position       : 20, 
-                               targetElement  : '_HeadInfo'},
+                               label          : 'Dados de Modificação',
+                               parentId       : 'Dados',
+                               type           : #FIELDGROUP_REFERENCE,
+                               targetQualifier: 'DadosRegistro',
+                               position       : 12 },
 
                              { id             : 'Item',
                                purpose        : #STANDARD,
@@ -107,9 +87,9 @@ define root custom entity ZC_MM_CE_INVENTORY_HEAD
 
       @UI.selectionField : [{ position: 10 }]
       @UI.lineItem       : [{ position: 10 }]
-//      @UI.fieldGroup     : [{ position: 10, qualifier: 'DadosGeral' }]
+      @UI.fieldGroup     : [{ position: 10, qualifier: 'DadosGeral' }]
 
-      @EndUserText.label : 'Número do documento'
+      @EndUserText.label : 'Doc. Pré Inventário'
       DocumentNo         : abap.char(10);
 
       @UI.selectionField : [{ position: 20 }]
@@ -134,7 +114,7 @@ define root custom entity ZC_MM_CE_INVENTORY_HEAD
 
       @UI.selectionField : [{ position: 40 } ]
       @UI.lineItem       : [{ position: 40, criticality: 'StatusCrit' } ]
-//      @UI.fieldGroup     : [{ position: 40, qualifier: 'DadosGeral' }]
+      @UI.fieldGroup     : [{ position: 40, qualifier: 'DadosGeral' }]
       @UI.dataPoint      : { qualifier: 'DataPointStatusId', title: 'Status', criticality: 'StatusCrit' }
 
       @EndUserText.label : 'Status'
@@ -206,9 +186,6 @@ define root custom entity ZC_MM_CE_INVENTORY_HEAD
       LocalLastChangedAt : timestampl;
 
       /* Associations */
-
-      @ObjectModel.filter.enabled: true
-      _HeadInfo          : composition [0..*] of ZC_MM_CE_INVENTORY_HEAD_INFO;
 
       @ObjectModel.filter.enabled: true
       _Item              : composition [0..*] of ZC_MM_CE_INVENTORY_ITEM;

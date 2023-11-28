@@ -15,6 +15,9 @@ CLASS zclmm_bd_inventory DEFINITION
       ty_t_item_read_import TYPE TABLE FOR READ IMPORT zc_mm_ce_inventory_head\\_item,
       ty_t_item_read_result TYPE TABLE FOR READ RESULT zc_mm_ce_inventory_head\\_item,
 
+      ty_report_item        TYPE zc_mm_ce_inventory_item,
+      ty_t_report_item      TYPE STANDARD TABLE OF ty_report_item,
+
       ty_reported           TYPE RESPONSE FOR REPORTED EARLY zc_mm_ce_inventory_head,
       ty_failed             TYPE RESPONSE FOR FAILED EARLY zc_mm_ce_inventory_head,
       ty_t_return           TYPE STANDARD TABLE OF bapiret2,
@@ -42,11 +45,10 @@ CLASS zclmm_bd_inventory DEFINITION
       END OF gc_cds,
 
       BEGIN OF gc_status_head,
-        created  TYPE zc_mm_ce_inventory_head-StatusId VALUE '00', " Criado
-        pending  TYPE zc_mm_ce_inventory_head-StatusId VALUE '01', " Pendente
-        released TYPE zc_mm_ce_inventory_head-StatusId VALUE '02', " Liberado
+        pending  TYPE zc_mm_ce_inventory_head-StatusId VALUE '00', " Pendente
+        released TYPE zc_mm_ce_inventory_head-StatusId VALUE '01', " Liberado
+        complete TYPE zc_mm_ce_inventory_head-StatusId VALUE '02', " Concluido
         canceled TYPE zc_mm_ce_inventory_head-StatusId VALUE '03', " Cancelado
-        complete TYPE zc_mm_ce_inventory_head-StatusId VALUE '04', " Concluido
       END OF gc_status_head,
 
       BEGIN OF gc_status_item,
@@ -55,7 +57,20 @@ CLASS zclmm_bd_inventory DEFINITION
         pending_count TYPE zc_mm_ce_inventory_item-StatusId VALUE '02', " Pendente Contagem
         complete      TYPE zc_mm_ce_inventory_item-StatusId VALUE '03', " Concluido
         canceled      TYPE zc_mm_ce_inventory_item-StatusId VALUE '04', " Cancelado
-      END OF gc_status_item.
+      END OF gc_status_item,
+
+      BEGIN OF gc_color,
+        new      TYPE i VALUE 0,
+        negative TYPE i VALUE 1,
+        critical TYPE i VALUE 2,
+        positive TYPE i VALUE 3,
+      END OF gc_color,
+
+      BEGIN OF gc_quantity_stock,
+        rfc_failed     TYPE c LENGTH 60 VALUE 'Falha na conexão!'  ##NO_TEXT,
+        no_stock_found TYPE c LENGTH 60 VALUE 'Estoque não encontrado!'  ##NO_TEXT,
+        stock_found    TYPE c LENGTH 60 VALUE 'OK'  ##NO_TEXT,
+      END OF gc_quantity_stock.
 
     "! Cria instancia
     CLASS-METHODS get_instance
@@ -142,13 +157,33 @@ CLASS zclmm_bd_inventory DEFINITION
 
     "! Chama RFC e cria documento de inventário, contagem e grava log
     METHODS call_rfc_inventory_release
-      IMPORTING is_head     TYPE z_s41_rfc_inventory_release=>zsmm_inventory_head
-                it_item     TYPE z_s41_rfc_inventory_release=>zctgmm_inventory_item
-                it_log      TYPE z_s41_rfc_inventory_release=>zctgmm_inventory_log OPTIONAL
-      EXPORTING es_rfc_head TYPE z_s41_rfc_inventory_release=>zsmm_inventory_head
-                et_rfc_item TYPE z_s41_rfc_inventory_release=>zctgmm_inventory_item
-                et_rfc_log  TYPE z_s41_rfc_inventory_release=>zctgmm_inventory_log
+      IMPORTING is_head     TYPE zc_mm_ce_inventory_head
+                it_item     TYPE ty_t_item
+                it_log      TYPE ty_t_log OPTIONAL
+      EXPORTING es_rfc_head TYPE zc_mm_ce_inventory_head
+                et_rfc_item TYPE ty_t_item
+                et_rfc_log  TYPE ty_t_log
                 et_return   TYPE ty_t_return.
+
+    "! Chama RFC e recupera dados de inventário
+    METHODS call_rfc_inventory_get_info
+      IMPORTING it_rfc_head       TYPE z_s41_rfc_inventory_get_info=>zctgmm_inventory_head
+                it_rfc_item       TYPE z_s41_rfc_inventory_get_info=>zctgmm_inventory_item
+      EXPORTING et_material_stock TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_material_stock
+                et_material_price TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_material_price
+                et_phys_inv_info  TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_phys_inv_info
+                et_return         TYPE ty_t_return.
+
+    "! Constrói o relatório a nível de item
+    METHODS build_report_item
+      IMPORTING it_head           TYPE ty_t_head
+                it_item           TYPE ty_t_item
+                it_material_stock TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_material_stock
+                it_material_price TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_material_price
+                it_phys_inv_info  TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_phys_inv_info
+                it_return_rfc     TYPE ty_t_return OPTIONAL
+      EXPORTING et_report         TYPE ty_t_report_item
+                et_return         TYPE ty_t_return.
 
 
   PROTECTED SECTION.
@@ -164,15 +199,22 @@ CLASS zclmm_bd_inventory DEFINITION
           gt_inventory_h TYPE SORTED TABLE OF ztmm_inventory_h
                          WITH UNIQUE KEY documentid,
           gt_inventory_i TYPE SORTED TABLE OF ztmm_inventory_i
-                         WITH UNIQUE KEY documentid documentitemid,
+                         WITH UNIQUE KEY documentitemid,
           gt_inventory_l TYPE SORTED TABLE OF ztmm_inventory_l
                          WITH UNIQUE KEY documentid line.
 
     METHODS ajust_log
-      IMPORTING
-        iv_documentid TYPE z_s41_rfc_inventory_release=>zsmm_inventory_head-documentid
-      CHANGING
-        ct_rfc_log    TYPE z_s41_rfc_inventory_release=>zctgmm_inventory_log.
+      IMPORTING iv_documentid TYPE z_s41_rfc_inventory_release=>zsmm_inventory_head-documentid
+                it_rfc_log    TYPE z_s41_rfc_inventory_release=>zctgmm_inventory_log
+      EXPORTING et_log        TYPE ty_t_log.
+
+    METHODS ajust_head
+      IMPORTING is_rfc_head TYPE z_s41_rfc_inventory_release=>zsmm_inventory_head
+      CHANGING  cs_head     TYPE ty_head.
+
+    METHODS ajust_item
+      IMPORTING it_rfc_item TYPE z_s41_rfc_inventory_release=>zctgmm_inventory_item
+      CHANGING  ct_item     TYPE ty_t_item.
 
 ENDCLASS.
 
@@ -249,7 +291,21 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 * ---------------------------------------------------------------------------
     IF et_head IS REQUESTED AND lt_head_key[] IS NOT INITIAL.
 
-      SELECT *
+      SELECT DocumentId,
+             DocumentNo,
+             CountId,
+             CountDate,
+             StatusId,
+             StatusText,
+             StatusCrit,
+             Plant,
+             PlantName,
+             Description,
+             CreatedBy,
+             CreatedAt,
+             LastChangedBy,
+             LastChangedAt,
+             LocalLastChangedAt
          FROM zi_mm_ce_inventory_head
          FOR ALL ENTRIES IN @lt_head_key
          WHERE DocumentId = @lt_head_key-DocumentId
@@ -258,6 +314,32 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
       IF sy-subrc EQ 0.
         SORT et_head BY DocumentId.
       ENDIF.
+
+      " Tabela DRAFT
+      SELECT DocumentId,
+             DocumentNo,
+             CountId,
+             CountDate,
+             StatusId,
+             StatusText,
+             StatusCrit,
+             Plant,
+             PlantName,
+             Description,
+             CreatedBy,
+             CreatedAt,
+             LastChangedBy,
+             LastChangedAt,
+             LocalLastChangedAt
+         FROM ztmm_inv_draft_h
+         FOR ALL ENTRIES IN @lt_head_key
+         WHERE DocumentId = @lt_head_key-DocumentId
+         APPENDING CORRESPONDING FIELDS OF TABLE @et_head.
+
+      IF sy-subrc EQ 0.
+        SORT et_head BY DocumentId.
+      ENDIF.
+
     ENDIF.
 
 * ---------------------------------------------------------------------------
@@ -265,7 +347,25 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 * ---------------------------------------------------------------------------
     IF et_item IS REQUESTED AND lt_item_key[] IS NOT INITIAL.
 
-      SELECT *
+      SELECT DocumentId,
+             DocumentItemId,
+             StatusId,
+             StatusText,
+             StatusCrit,
+             Material,
+             MaterialName,
+             StorageLocation,
+             StorageLocationName,
+             Batch,
+             QuantityCount,
+             Unit,
+             PhysicalInventoryDocument,
+             FiscalYear,
+             CreatedBy,
+             CreatedAt,
+             LastChangedBy,
+             LastChangedAt,
+             LocalLastChangedAt
          FROM zi_mm_ce_inventory_item
          FOR ALL ENTRIES IN @lt_item_key
          WHERE DocumentId     = @lt_item_key-DocumentId
@@ -276,9 +376,57 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
         SORT et_item BY DocumentId DocumentItemId.
       ENDIF.
 
+      " Tabela DRAFT
+      SELECT DocumentId,
+             DocumentItemId,
+             StatusId,
+             StatusText,
+             StatusCrit,
+             Material,
+             MaterialName,
+             StorageLocation,
+             StorageLocationName,
+             Batch,
+             QuantityCount,
+             Unit,
+             PhysicalInventoryDocument,
+             FiscalYear,
+             CreatedBy,
+             CreatedAt,
+             LastChangedBy,
+             LastChangedAt,
+             LocalLastChangedAt
+         FROM ztmm_inv_draft_i
+         FOR ALL ENTRIES IN @lt_item_key
+         WHERE DocumentId     = @lt_item_key-DocumentId
+           AND DocumentItemId = @lt_item_key-DocumentItemId
+         APPENDING CORRESPONDING FIELDS OF TABLE @et_item.
+
+      IF sy-subrc EQ 0.
+        SORT et_item BY DocumentId DocumentItemId.
+      ENDIF.
+
     ELSEIF et_item IS REQUESTED AND lt_head_key[] IS NOT INITIAL.
 
-      SELECT *
+      SELECT DocumentId,
+             DocumentItemId,
+             StatusId,
+             StatusText,
+             StatusCrit,
+             Material,
+             MaterialName,
+             StorageLocation,
+             StorageLocationName,
+             Batch,
+             QuantityCount,
+             Unit,
+             PhysicalInventoryDocument,
+             FiscalYear,
+             CreatedBy,
+             CreatedAt,
+             LastChangedBy,
+             LastChangedAt,
+             LocalLastChangedAt
          FROM zi_mm_ce_inventory_item
          FOR ALL ENTRIES IN @lt_head_key
          WHERE DocumentId     = @lt_head_key-DocumentId
@@ -287,6 +435,36 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
       IF sy-subrc EQ 0.
         SORT et_item BY DocumentId DocumentItemId.
       ENDIF.
+
+      " Tabela DRAFT
+      SELECT DocumentId,
+             DocumentItemId,
+             StatusId,
+             StatusText,
+             StatusCrit,
+             Material,
+             MaterialName,
+             StorageLocation,
+             StorageLocationName,
+             Batch,
+             QuantityCount,
+             Unit,
+             PhysicalInventoryDocument,
+             FiscalYear,
+             CreatedBy,
+             CreatedAt,
+             LastChangedBy,
+             LastChangedAt,
+             LocalLastChangedAt
+          FROM ztmm_inv_draft_i
+          FOR ALL ENTRIES IN @lt_head_key
+          WHERE DocumentId     = @lt_head_key-DocumentId
+          APPENDING CORRESPONDING FIELDS OF TABLE @et_item.
+
+      IF sy-subrc EQ 0.
+        SORT et_item BY DocumentId DocumentItemId.
+      ENDIF.
+
     ENDIF.
 
 * ---------------------------------------------------------------------------
@@ -294,7 +472,23 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 * ---------------------------------------------------------------------------
     IF et_log IS REQUESTED AND lt_log_key[] IS NOT INITIAL.
 
-      SELECT *
+      SELECT DocumentId,
+             Line,
+             Msgid,
+             Msgty,
+             MsgtyText,
+             MsgtyCrit,
+             Msgno,
+             Msgv1,
+             Msgv2,
+             Msgv3,
+             Msgv4,
+             Message,
+             CreatedBy,
+             CreatedAt,
+             LastChangedBy,
+             LastChangedAt,
+             LocalLastChangedAt
          FROM zi_mm_ce_inventory_log
          FOR ALL ENTRIES IN @lt_log_key
          WHERE DocumentId = @lt_log_key-DocumentId
@@ -305,9 +499,53 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
         SORT et_log BY DocumentId Line.
       ENDIF.
 
+      " Tabela DRAFT
+      SELECT DocumentId,
+             Line,
+             Msgid,
+             Msgty,
+             MsgtyText,
+             MsgtyCrit,
+             Msgno,
+             Msgv1,
+             Msgv2,
+             Msgv3,
+             Msgv4,
+             Message,
+             CreatedBy,
+             CreatedAt,
+             LastChangedBy,
+             LastChangedAt,
+             LocalLastChangedAt
+         FROM ztmm_inv_draft_l
+         FOR ALL ENTRIES IN @lt_log_key
+         WHERE DocumentId = @lt_log_key-DocumentId
+           AND Line       = @lt_log_key-Line
+         APPENDING CORRESPONDING FIELDS OF TABLE @et_log.
+
+      IF sy-subrc EQ 0.
+        SORT et_log BY DocumentId Line.
+      ENDIF.
+
     ELSEIF et_log IS REQUESTED AND lt_head_key[] IS NOT INITIAL.
 
-      SELECT *
+      SELECT DocumentId,
+             Line,
+             Msgid,
+             Msgty,
+             MsgtyText,
+             MsgtyCrit,
+             Msgno,
+             Msgv1,
+             Msgv2,
+             Msgv3,
+             Msgv4,
+             Message,
+             CreatedBy,
+             CreatedAt,
+             LastChangedBy,
+             LastChangedAt,
+             LocalLastChangedAt
          FROM zi_mm_ce_inventory_log
          FOR ALL ENTRIES IN @lt_head_key
          WHERE DocumentId     = @lt_head_key-DocumentId
@@ -316,6 +554,34 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
       IF sy-subrc EQ 0.
         SORT et_log BY DocumentId Line.
       ENDIF.
+
+      " Tabela DRAFT
+      SELECT DocumentId,
+             Line,
+             Msgid,
+             Msgty,
+             MsgtyText,
+             MsgtyCrit,
+             Msgno,
+             Msgv1,
+             Msgv2,
+             Msgv3,
+             Msgv4,
+             Message,
+             CreatedBy,
+             CreatedAt,
+             LastChangedBy,
+             LastChangedAt,
+             LocalLastChangedAt
+         FROM ztmm_inv_draft_l
+         FOR ALL ENTRIES IN @lt_head_key
+         WHERE DocumentId     = @lt_head_key-DocumentId
+         APPENDING CORRESPONDING FIELDS OF TABLE @et_log.
+
+      IF sy-subrc EQ 0.
+        SORT et_log BY DocumentId Line.
+      ENDIF.
+
     ENDIF.
 
   ENDMETHOD.
@@ -335,7 +601,7 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 * ---------------------------------------------------------------------------
     SELECT SINGLE Status, StatusText
        FROM zi_mm_vh_inventory_status
-       WHERE Status = @gc_status_head-created
+       WHERE Status = @gc_status_head-pending
        INTO @DATA(ls_status).
 
     IF sy-subrc NE 0.
@@ -353,6 +619,19 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
     IF sy-subrc NE 0.
       lv_DocumentNo = 0.
     ENDIF.
+
+    SELECT MAX( DocumentNo )
+        FROM ztmm_inv_draft_h
+        WHERE DocumentNo IS NOT INITIAL
+        INTO @DATA(lv_DocumentNoDraft).
+
+    IF sy-subrc NE 0.
+      lv_DocumentNo = 0.
+    ENDIF.
+
+    lv_DocumentNo = COND #( WHEN lv_DocumentNo >= lv_DocumentNoDraft
+                            THEN lv_DocumentNo
+                            ELSE lv_DocumentNoDraft ).
 
 * ---------------------------------------------------------------------------
 * Cria nova linha de cabeçalho
@@ -834,33 +1113,26 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 * ---------------------------------------------------------------------
 * Cria documento de inventário, contagem e log via RFC
 * ---------------------------------------------------------------------
-*    CALL FUNCTION 'ZFMMM_INVENTORY'
-*      STARTING NEW TASK 'BACKGROUND' CALLING task_finish ON END OF TASK
-*      EXPORTING
-*        is_head     = CORRESPONDING #( ls_head )
-*        it_item     = CORRESPONDING #( lt_item )
-*        it_log      = CORRESPONDING #( lt_log )
-*      TABLES
-*        es_rfc_head = data(ls_rfc_head)
-*        et_rfc_item = data(lt_rfc_item)
-*        et_rfc_log  = data(lt_rfc_log).
-*
-*    WAIT FOR ASYNCHRONOUS TASKS UNTIL me->gt_return IS NOT INITIAL.
-
-
-    me->call_rfc_inventory_release( EXPORTING is_head     = CORRESPONDING #( ls_head )
-                                              it_item     = CORRESPONDING #( lt_item )
-                                              it_log      = CORRESPONDING #( lt_log )
+    me->call_rfc_inventory_release( EXPORTING is_head     = ls_head
+                                              it_item     = lt_item
+                                              it_log      = lt_log
                                     IMPORTING es_rfc_head = DATA(ls_rfc_head)
                                               et_rfc_item = DATA(lt_rfc_item)
                                               et_rfc_log  = DATA(lt_rfc_log)
                                               et_return   = et_return ).
-    CHECK et_return IS INITIAL.
+
+    IF line_exists( lt_rfc_log[ msgty = 'E' ] ).
+      " Ocorreram erros na execução. Verifique o Log.
+      et_return = VALUE #(  ( type = 'S' id = 'ZMM_INVENTORY' number = '004' ) ).
+    ELSE.
+      " Liberado com suesso.
+      et_return = VALUE #(  ( type = 'S' id = 'ZMM_INVENTORY' number = '005' ) ).
+    ENDIF.
 
     me->prepare_commit( EXPORTING iv_update = abap_true
                                   it_head   = VALUE #( ( CORRESPONDING #( ls_rfc_head ) ) )
-                                  it_item   = CORRESPONDING #( lt_rfc_item )
-                                  it_log    = CORRESPONDING #( lt_rfc_log )
+                                  it_item   = lt_rfc_item
+                                  it_log    = lt_rfc_log
                         IMPORTING et_return = et_return ).
 
   ENDMETHOD.
@@ -879,6 +1151,8 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
     CHECK is_head IS NOT INITIAL.
     CHECK it_item IS NOT INITIAL.
 
+    es_rfc_head = is_head.
+    et_rfc_item = it_item.
 * ----------------------------------------------------------------------
 * Chama RFC
 * ----------------------------------------------------------------------
@@ -890,18 +1164,29 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
             destination = lo_dest.
 
         " Execução da BAPI via RFC
-        lo_myobj->zfmmm_inventory_release( EXPORTING is_head = is_head
-                                                     it_item = it_item
-                                                     it_log  = it_log
-                                           IMPORTING es_head = es_rfc_head
-                                                     et_item = et_rfc_item
-                                                     et_log  = et_rfc_log ).
+        lo_myobj->zfmmm_inventory_release( EXPORTING is_head = CORRESPONDING #( is_head )
+                                                     it_item = CORRESPONDING #( it_item )
+                                                     it_log  = CORRESPONDING #( it_log )
+                                           IMPORTING es_head = DATA(ls_rfc_head)
+                                                     et_item = DATA(lt_rfc_item)
+                                                     et_log  = DATA(lt_rfc_log) ).
 
 * ----------------------------------------------------------------------
 * Ajusta contagem do campo LINE da tabela de LOG
 * ----------------------------------------------------------------------
         me->ajust_log( EXPORTING iv_documentid = is_head-documentid
-                       CHANGING  ct_rfc_log    = et_rfc_log ).
+                                 it_rfc_log    = lt_rfc_log
+                       IMPORTING et_log        = et_rfc_log ).
+* ----------------------------------------------------------------------
+* Ajusta campos de controle do header
+* ----------------------------------------------------------------------
+        me->ajust_head( EXPORTING is_rfc_head = ls_rfc_head
+                        CHANGING  cs_head     = es_rfc_head ).
+* ----------------------------------------------------------------------
+* Ajusta campos de controle do item
+* ----------------------------------------------------------------------
+        me->ajust_item( EXPORTING it_rfc_item = lt_rfc_item
+                        CHANGING  ct_item     = et_rfc_item ).
 
       CATCH  cx_aco_communication_failure INTO DATA(lo_comm).
         lv_text = lo_comm->get_longtext( ).
@@ -960,7 +1245,10 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 
   ENDMETHOD.
 
+
   METHOD ajust_log.
+
+    FREE: et_log.
 * ---------------------------------------------------------------------------
 * Recupera última mensagem criada
 * ---------------------------------------------------------------------------
@@ -975,8 +1263,298 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 * ---------------------------------------------------------------------------
 * Prepara mensagens
 * ---------------------------------------------------------------------------
-    LOOP AT ct_rfc_log ASSIGNING FIELD-SYMBOL(<fs_log>).
-      <fs_log>-line = sy-tabix + lv_seqnr.
+    et_log = CORRESPONDING #( it_rfc_log ).
+
+    LOOP AT et_log ASSIGNING FIELD-SYMBOL(<fs_log>).
+      <fs_log>-line          = sy-tabix + lv_seqnr.
+      <fs_log>-CreatedBy     = sy-uname.
+      <fs_log>-LastChangedBy = sy-uname.
+      GET TIME STAMP FIELD <fs_log>-CreatedAt.
+      GET TIME STAMP FIELD <fs_log>-LastChangedAt.
+      GET TIME STAMP FIELD <fs_log>-LocalLastChangedAt.
+
     ENDLOOP.
+
   ENDMETHOD.
+
+
+  METHOD call_rfc_inventory_get_info.
+
+    DATA: lo_dest  TYPE REF TO if_rfc_dest,
+          lo_myobj TYPE REF TO z_s41_rfc_inventory_get_info,
+          lv_text  TYPE bapiret2-message.
+
+    FREE: et_material_stock, et_material_price, et_phys_inv_info, et_return.
+
+    CHECK it_rfc_head IS NOT INITIAL.
+    CHECK it_rfc_item IS NOT INITIAL.
+
+* ----------------------------------------------------------------------
+* Chama RFC
+* ----------------------------------------------------------------------
+    TRY.
+        lo_dest = cl_rfc_destination_provider=>create_by_cloud_destination( i_name = 'S41_RFC_120' ).
+
+        CREATE OBJECT lo_myobj
+          EXPORTING
+            destination = lo_dest.
+
+        " Execução da BAPI via RFC
+        lo_myobj->zfmmm_inventory_get_info(
+           EXPORTING
+             it_head           = it_rfc_head
+             it_item           = it_rfc_item
+           IMPORTING
+             et_material_stock = et_material_stock
+             et_material_price = et_material_price
+             et_phys_inv_info  = et_phys_inv_info
+         ).
+
+      CATCH  cx_aco_communication_failure INTO DATA(lo_comm).
+        lv_text = lo_comm->get_longtext( ).
+        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
+      CATCH cx_aco_system_failure INTO DATA(lo_sys).
+        lv_text = lo_sys->get_longtext( ).
+        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
+      CATCH cx_aco_application_exception INTO DATA(lo_appl).
+        lv_text = lo_appl->get_longtext( ).
+        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
+      CATCH cx_rfc_dest_provider_error INTO DATA(lo_error).
+        lv_text = lo_error->get_longtext( ).
+        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
+    ENDTRY.
+
+    SORT et_material_stock BY enddate material plant storagelocation batch materialbaseunit.
+    SORT et_material_price BY valuationarea Material baseunit currency.
+    SORT et_phys_inv_info BY fiscalyear physicalinventorydocument.
+
+  ENDMETHOD.
+
+
+  METHOD build_report_item.
+
+    DATA: ls_report TYPE ty_report_item.
+
+    FREE: et_report, et_return.
+
+    LOOP AT it_item REFERENCE INTO DATA(ls_item).
+
+      " Recupera dados de cabeçalho
+      READ TABLE it_head REFERENCE INTO DATA(ls_head) WITH KEY documentid = ls_item->DocumentId BINARY SEARCH.
+
+      IF sy-subrc NE 0.
+        CONTINUE.
+      ENDIF.
+
+      " Recupera dados estoque de material (contagem)
+      READ TABLE it_material_stock INTO DATA(ls_mat_stock_count) WITH KEY EndDate          = ls_head->countdate
+                                                                          Material         = ls_item->Material
+                                                                          Plant            = ls_head->Plant
+                                                                          StorageLocation  = ls_item->StorageLocation
+                                                                          Batch            = ls_item->Batch
+                                                                          MaterialBaseUnit = ls_item->Unit
+                                                                          BINARY SEARCH.
+
+      IF sy-subrc NE 0.
+        CLEAR ls_mat_stock_count.
+      ENDIF.
+
+      " Recupera dados estoque de material (contagem)
+      READ TABLE it_material_stock INTO DATA(ls_mat_stock_current) WITH KEY EndDate          = ls_head->countdate
+                                                                            Material         = ls_item->Material
+                                                                            Plant            = ls_head->Plant
+                                                                            StorageLocation  = ls_item->StorageLocation
+                                                                            Batch            = ls_item->Batch
+                                                                            MaterialBaseUnit = ls_item->Unit
+                                                                            BINARY SEARCH.
+
+      IF sy-subrc NE 0.
+        CLEAR ls_mat_stock_current.
+      ENDIF.
+
+      " Recupera preço do material
+      READ TABLE it_material_price INTO DATA(ls_material_price) WITH KEY valuationarea = ls_head->Plant
+                                                                            Material   = ls_item->Material
+                                                                            baseunit   = ls_item->Unit
+                                                                            currency   = 'BRL'
+                                                                            BINARY SEARCH.
+      IF sy-subrc NE 0.
+
+        READ TABLE it_material_price INTO ls_material_price WITH KEY valuationarea = ls_head->Plant
+                                                                     Material      = ls_item->Material
+                                                                     baseunit      = ls_item->Unit
+                                                                     BINARY SEARCH.
+
+        IF sy-subrc NE 0.
+          CLEAR ls_mat_stock_current.
+        ENDIF.
+      ENDIF.
+
+
+      " Recupera dados de inventário
+      READ TABLE it_phys_inv_info INTO DATA(ls_phys_inv_info) WITH KEY FiscalYear                = ls_item->FiscalYear
+                                                                       PhysicalInventoryDocument = ls_item->PhysicalInventoryDocument
+                                                                       BINARY SEARCH.
+      IF sy-subrc NE 0.
+        CLEAR ls_phys_inv_info.
+      ENDIF.
+
+
+      CLEAR ls_report.
+      ls_report = CORRESPONDING #( ls_item->* ).
+
+      ls_report-MaterialName                = COND #( WHEN ls_report-MaterialName IS NOT INITIAL
+                                                      THEN ls_report-MaterialName
+                                                      WHEN ls_material_price-materialname IS NOT INITIAL
+                                                      THEN ls_material_price-MaterialName
+                                                      WHEN ls_mat_stock_count-MaterialName IS NOT INITIAL
+                                                      THEN ls_mat_stock_count-MaterialName
+                                                      WHEN ls_mat_stock_current-MaterialName IS NOT INITIAL
+                                                      THEN ls_mat_stock_current-MaterialName
+                                                      ELSE space ).
+
+      ls_report-StorageLocationName         = COND #( WHEN ls_report-StorageLocationName IS NOT INITIAL
+                                                      THEN ls_report-StorageLocationName
+                                                      WHEN ls_mat_stock_count-StorageLocationName IS NOT INITIAL
+                                                      THEN ls_mat_stock_count-StorageLocationName
+                                                      WHEN ls_mat_stock_current-StorageLocationName IS NOT INITIAL
+                                                      THEN ls_mat_stock_current-StorageLocationName
+                                                      ELSE space ).
+
+      ls_report-QuantityStock               = ls_mat_stock_count-PeriodQuantity.
+
+      ls_report-QuantityStockText           = COND #( WHEN it_return_rfc IS NOT INITIAL " Ocorreu algum erro na chamada RFC
+                                                      THEN gc_quantity_stock-rfc_failed
+                                                      ELSE gc_quantity_stock-stock_found ).
+
+      ls_report-QuantityStockCrit           = COND #( WHEN it_return_rfc IS NOT INITIAL
+                                                      THEN gc_color-negative
+                                                      WHEN ls_mat_stock_count IS INITIAL
+                                                      THEN gc_color-critical
+                                                      ELSE gc_color-positive ).
+
+      ls_report-QuantityCurrent             = ls_mat_stock_current-PeriodQuantity.
+
+      ls_report-QuantityCurrentCrit         = COND #( WHEN it_return_rfc IS NOT INITIAL
+                                                      THEN gc_color-negative
+                                                      WHEN ls_mat_stock_current IS INITIAL
+                                                      THEN gc_color-critical
+                                                      ELSE gc_color-positive ).
+
+      ls_report-balance                     = ls_report-QuantityCount - ls_report-QuantityStock.
+      ls_report-balancecurrent              = ls_report-QuantityCount - ls_report-QuantityCurrent.
+
+      TRY.
+          ls_report-pricestock              = ( ls_material_price-inventoryprice / ls_material_price-materialpriceunitqty ) * ls_report-quantitystock.
+        CATCH cx_root.
+          ls_report-pricestock              = 0.
+      ENDTRY.
+
+      TRY.
+          ls_report-pricecount              = ( ls_material_price-inventoryprice / ls_material_price-materialpriceunitqty ) * ls_report-quantitycount.
+        CATCH cx_root.
+          ls_report-pricecount              = 0.
+      ENDTRY.
+
+      TRY.
+          ls_report-pricediff               = abs( ( ls_material_price-inventoryprice / ls_material_price-materialpriceunitqty ) * ls_report-balance ).
+        CATCH cx_root.
+          ls_report-pricediff               = 0.
+      ENDTRY.
+
+      ls_report-currency                    = ls_material_price-currency.
+
+      TRY.
+          ls_report-weight                  =  ls_material_price-grossweight * ls_report-balance.
+        CATCH cx_root.
+          ls_report-weight                  = 0.
+      ENDTRY.
+
+      TRY.
+          ls_report-weightunit              = ls_material_price-weightunit.
+        CATCH cx_root.
+          ls_report-weightunit              = space.
+      ENDTRY.
+
+      TRY.
+          ls_report-accuracy                = ( 1 - ( ls_report-pricediff / ls_report-pricestock ) ) * 100.
+        CATCH cx_root.
+          ls_report-accuracy                = 0.
+      ENDTRY.
+
+      ls_report-accuracy                    = COND #( WHEN ls_report-accuracy > 100
+                                                      THEN 100
+                                                      WHEN ls_report-accuracy < 0
+                                                      THEN 0
+                                                      ELSE ls_report-accuracy ).
+
+      ls_report-AccuracyCrit                = COND #( WHEN ls_report-accuracy >= 95
+                                                      THEN gc_color-positive
+                                                      WHEN ls_report-accuracy > 0
+                                                      THEN gc_color-critical
+                                                      ELSE gc_color-new ).
+
+      ls_report-MaterialDocument            = ls_phys_inv_info-MaterialDocument.
+      ls_report-MaterialDocumentYear        = ls_phys_inv_info-MaterialDocumentYear.
+      ls_report-PostingDate                 = ls_phys_inv_info-postingdate.
+      ls_report-BR_NotaFiscal               = ls_phys_inv_info-br_notafiscal.
+      ls_report-BR_NFeNumber                = ls_phys_inv_info-br_nfenumber.
+      ls_report-BR_NFIsCanceled             = ls_phys_inv_info-br_nfiscanceled.
+      ls_report-BR_NFeDocumentStatus        = ls_phys_inv_info-br_nfedocumentstatus.
+      ls_report-BR_NFeDocumentStatusText    = ls_phys_inv_info-br_nfedocumentstatustext.
+      ls_report-CompanyCode                 = ls_phys_inv_info-companycode.
+      ls_report-CompanyCodeName             = ls_phys_inv_info-CompanyCodeName.
+      ls_report-AccountingDocument          = ls_phys_inv_info-accountingdocument.
+      ls_report-AccountingDocumentYear      = ls_phys_inv_info-accountingdocumentyear.
+      ls_report-ExternalReference           = ls_phys_inv_info-externalreference.
+      ls_report-DocumentDate                = ls_phys_inv_info-documentdate.
+
+      ls_report-ProductHierarchy            = ls_material_price-producthierarchy.
+
+
+      et_report = VALUE #( BASE et_report ( ls_report ) ).
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD ajust_head.
+
+    IF is_rfc_head-statusid NE cs_head-StatusId.
+      cs_head-StatusId      = is_rfc_head-StatusId.
+      cs_head-LastChangedBy = sy-uname.
+      GET TIME STAMP FIELD cs_head-LastChangedAt.
+      GET TIME STAMP FIELD cs_head-LocalLastChangedAt.
+    ENDIF.
+
+  ENDMETHOD.
+
+  METHOD ajust_item.
+
+    IF ct_item IS NOT INITIAL.
+      SORT ct_item BY documentid DocumentItemId.
+    ENDIF.
+
+    LOOP AT it_rfc_item ASSIGNING FIELD-SYMBOL(<fs_rfc_item>).
+
+      READ TABLE ct_item ASSIGNING FIELD-SYMBOL(<fs_item>) WITH KEY documentid = <fs_rfc_item>-documentid
+                                                                    DocumentItemId  = <fs_rfc_item>-DocumentItemId
+                                                                    BINARY SEARCH.
+      IF sy-subrc NE 0.
+        CONTINUE.
+      ENDIF.
+
+      IF <fs_rfc_item>-physicalinventorydocument EQ <fs_item>-PhysicalInventoryDocument.
+        CONTINUE.
+      ENDIF.
+
+      <fs_item> = CORRESPONDING #( <fs_rfc_item> ).
+
+      <fs_item>-LastChangedBy = sy-uname.
+      GET TIME STAMP FIELD <fs_item>-LastChangedAt.
+      GET TIME STAMP FIELD <fs_item>-LocalLastChangedAt.
+    ENDLOOP.
+
+  ENDMETHOD.
+
 ENDCLASS.

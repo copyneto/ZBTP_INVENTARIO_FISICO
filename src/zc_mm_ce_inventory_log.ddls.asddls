@@ -10,7 +10,7 @@
 
 @UI.presentationVariant: [{sortOrder: [{by: 'Line', direction: #DESC }]}]
 
-@ObjectModel.semanticKey: ['Line']
+@ObjectModel.semanticKey: ['DocumentId', 'Line']
 
 define custom entity ZC_MM_CE_INVENTORY_LOG
 {
@@ -21,13 +21,7 @@ define custom entity ZC_MM_CE_INVENTORY_LOG
       @UI.facet          : [ { id           : 'Log',
                                purpose      : #STANDARD,
                                type         : #IDENTIFICATION_REFERENCE,
-                               position     : 10 },
-
-                             { id           : 'Header',
-                               purpose      : #STANDARD,
-                               type         : #LINEITEM_REFERENCE,
-                               position     : 20,
-                               targetElement: '_Head'}]
+                               position     : 10 }]
 
       // ------------------------------------------------------
       // Field information
@@ -51,6 +45,7 @@ define custom entity ZC_MM_CE_INVENTORY_LOG
       @UI.identification : [{ position: 20 }]
 
       @EndUserText.label : 'Tipo de mensagem'
+      @ObjectModel.text.element : ['MsgtyText']
       Msgty              : abap.char(1);
 
       @UI.hidden         : true

@@ -5,7 +5,8 @@
 
 @UI.lineItem: [{criticality: 'MsgtyCrit'}]
 
-@UI.presentationVariant: [{sortOrder: [{by: 'Line', direction: #DESC }]}]
+@UI.presentationVariant: [{sortOrder: [{by: 'Line', direction: #DESC }],
+                           visualizations: [ { type: #AS_LINEITEM }] }]
 
 annotate view ZC_MM_INVENTORY_LOG with
 {
@@ -16,13 +17,7 @@ annotate view ZC_MM_INVENTORY_LOG with
   @UI.facet          : [ { id           : 'Log',
                            purpose      : #STANDARD,
                            type         : #IDENTIFICATION_REFERENCE,
-                           position     : 10 },
-
-                         { id           : 'Header',
-                           purpose      : #STANDARD,
-                           type         : #LINEITEM_REFERENCE,
-                           position     : 20,
-                           targetElement: '_Head'}]
+                           position     : 10 }]
 
   // ------------------------------------------------------
   // Field information
@@ -81,12 +76,20 @@ annotate view ZC_MM_INVENTORY_LOG with
 
   @EndUserText.label : 'Criado por'
   CreatedBy;
+  
+  @UI.hidden: true
+  
+  CreatedByName;
 
   @EndUserText.label : 'Criado em'
   CreatedAt;
 
   @EndUserText.label : 'Modificado por'
   LastChangedBy;
+  
+  @UI.hidden: true
+  
+  LastChangedByName;
 
   @EndUserText.label : 'Modificado em'
   LastChangedAt;

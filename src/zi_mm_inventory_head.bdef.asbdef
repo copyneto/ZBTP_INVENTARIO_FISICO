@@ -1,41 +1,61 @@
 managed;
-strict ( 2 );
+strict ( 1 );
+with draft;
 
 define behavior for ZI_MM_INVENTORY_HEAD alias _Head
 implementation in class zclmm_inventory_head unique
 persistent table ztmm_inventory_h
+draft table ztmm_inv_draft_h
 lock master
+total etag LocalLastChangedAt
 authorization master ( instance )
-etag master LastChangedAt
+etag master LocalLastChangedAt
 {
   create;
   update ( features : instance );
   delete ( features : instance );
 
-  association _Item { create ( features : instance ); }
+  association _Item { create ( features : instance ); with draft; }
+  association _Log { create ( features : instance ); with draft; }
 
   action ( features : instance ) cancelar;
   action ( features : instance ) liberar;
 
+  determination createDocumentNo on save { create; }
+
+  internal draft action AdditionalSave;
+
+  draft action Edit;
+  draft action Discard;
+  draft action Resume;
+  draft determine action Prepare
+  {
+    //  validation validadeDuplicate;
+  }
+  draft action Activate optimized;
+
   side effects
   {
-    action cancelar affects field *;
-    action liberar affects field *;
+    action cancelar affects entity _Log, entity _Item, field *;
+    action liberar affects entity _Log, entity _Item, field *;
   }
 
   field ( numbering : managed, readonly : update )
   Documentid;
 
+  field ( mandatory : create, readonly : update )
+  Plant, Countid, CountDate;
+
   field ( readonly )
   StatusId,
   DocumentNo,
-  CountId,
-  CountDate,
-  //  Accuracy,
+  createdby,
+  CreatedByName,
+  createdat,
+  LastChangedBy,
+  LastChangedByName,
   LastChangedAt,
-  LastChangedBy, CreatedAt, CreatedBy,
   LocalLastChangedAt;
-
 
   mapping for ztmm_inventory_h
     {
@@ -59,41 +79,77 @@ etag master LastChangedAt
 define behavior for ZI_MM_INVENTORY_ITEM alias _Item
 implementation in class zclmm_inventory_item unique
 persistent table ztmm_inventory_i
+draft table ztmm_inv_draft_i
 lock dependent by _Head
 authorization dependent by _Head
-etag master LastChangedAt
+etag master LocalLastChangedAt
 {
   update ( features : instance );
   delete ( features : instance );
-  association _Head;
 
-  determination updatedata on save { field Storagelocation, Batch, Quantitycount; }
+  association _Head { with draft; }
 
-  field ( readonly : update ) DocumentId;
-  field ( numbering : managed, readonly : update ) DocumentItemId;
+  validation validadeDuplicate on save  ##NOT_ASSIGNED_TO_DETACT { create; update; }
+  determination validateField on save { create; update; }
+
+  field ( readonly, numbering : managed )
+  DocumentItemId;
+  field ( readonly )
+  DocumentId;
+
+  field ( readonly )
+  StatusId,
+  StatusText,
+  StatusCrit,
+  QuantityStock,
+  QuantityStockText,
+  QuantityStockCrit,
+  QuantityCurrent,
+  QuantityCurrentCrit,
+  Balance,
+  BalanceCurrent,
+  PriceStock,
+  PriceCount,
+  PriceDiff,
+  Currency,
+  Weight,
+  WeightUnit,
+  Accuracy,
+  MaterialDocument,
+  MaterialDocumentYear,
+  PostingDate,
+  BR_NotaFiscal,
+  BR_NFeNumber,
+  BR_NFIsCanceled,
+  BR_NFeDocumentStatus,
+  BR_NFeDocumentStatusText,
+  CompanyCode,
+  CompanyCodeName,
+  AccountingDocument,
+  AccountingDocumentYear,
+  ExternalReference,
+  DocumentDate,
+  PhysicalInventoryDocument,
+  ProductHierarchy,
+  FiscalYear,
+  createdby,
+  CreatedByName,
+  createdat,
+  LastChangedByName,
+  LastChangedAt,
+  LocalLastChangedAt;
 
   mapping for ztmm_inventory_i
     {
       DocumentId                = DocumentId;
       DocumentItemId            = DocumentItemId;
       Material                  = Material;
-      Plant                     = Plant;
+      MaterialName              = materialname;
       Storagelocation           = Storagelocation;
       StorageLocationName       = StorageLocationName;
       Batch                     = Batch;
-      Quantitystock             = Quantitystock;
       Quantitycount             = Quantitycount;
-      Quantitycurrent           = Quantitycurrent;
-      Balance                   = Balance;
-      Balancecurrent            = Balancecurrent;
       Unit                      = Unit;
-      Pricestock                = Pricestock;
-      Pricecount                = Pricecount;
-      Pricediff                 = Pricediff;
-      Currency                  = Currency;
-      Weight                    = Weight;
-      Weightunit                = Weightunit;
-      Accuracy                  = Accuracy;
       PhysicalInventoryDocument = PhysicalInventoryDocument;
       Fiscalyear                = Fiscalyear;
       StatusId                  = StatusId;
@@ -103,6 +159,56 @@ etag master LastChangedAt
       LastChangedBy             = LastChangedBy;
       LastChangedAt             = LastChangedAt;
       LocalLastChangedAt        = LocalLastChangedAt;
+    }
+
+}
+
+define behavior for ZI_MM_INVENTORY_LOG alias _Log
+persistent table ztmm_inventory_l
+draft table ztmm_inv_draft_l
+lock dependent by _Head
+authorization dependent by _Head
+etag master LocalLastChangedAt
+{
+  association _Head { with draft; }
+
+  field ( readonly : update )
+  DocumentId;
+
+  field ( readonly )
+  Line,
+  msgid,
+  msgty,
+  msgno,
+  msgv1,
+  msgv2,
+  msgv3,
+  msgv4,
+  message,
+  createdby,
+  CreatedByName,
+  createdat,
+  LastChangedByName,
+  lastchangedat,
+  locallastchangedat;
+
+  mapping for ztmm_inventory_l
+    {
+      DocumentId         = DocumentId;
+      Line               = Line;
+      msgid              = msgid;
+      msgty              = msgty;
+      msgno              = msgno;
+      msgv1              = msgv1;
+      msgv2              = msgv2;
+      msgv3              = msgv3;
+      msgv4              = msgv4;
+      message            = message;
+      createdby          = createdby;
+      createdat          = createdat;
+      lastchangedby      = lastchangedby;
+      lastchangedat      = lastchangedat;
+      locallastchangedat = locallastchangedat;
     }
 
 }

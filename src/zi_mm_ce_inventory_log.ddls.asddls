@@ -22,10 +22,10 @@ define view entity ZI_MM_CE_INVENTORY_LOG
 
       case _Log.msgty
       when 'S' then 3 -- Sucesso
-      when 'E' then 2 -- Erro
-      when 'W' then 1 -- Aviso
-      when 'I' then 1 -- Informativo
-      when 'A' then 2 -- Terminação
+      when 'E' then 1 -- Erro
+      when 'W' then 2 -- Aviso
+      when 'I' then 2 -- Informativo
+      when 'A' then 1 -- Terminação
       when 'X' then 2 -- Exit
                else 0
       end                     as MsgtyCrit,
