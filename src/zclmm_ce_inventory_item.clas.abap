@@ -103,7 +103,9 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
         RETURN.
     ENDTRY.
 
+    DATA(lv_total_requested) = io_request->is_total_numb_of_rec_requested( ).
     DATA(lt_sort_elements)   = io_request->get_sort_elements( ).
+    DATA(lt_req_elements)    = io_request->get_requested_elements( ).
     DATA(lt_aggr_element)    = io_request->get_aggregation( )->get_aggregated_elements( ).
 
 * ---------------------------------------------------------------------------
@@ -125,6 +127,11 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
       CATCH cx_rap_query_filter_no_range INTO DATA(lo_ex_filter).
         lv_exp_msg = lo_ex_filter->get_longtext( ).
     ENDTRY.
+
+    " Quando uma agregação/sumarização é solicitada, precisamos buscar todos os dados
+    DATA(lv_set_top) = COND int8( WHEN lt_aggr_element[] IS NOT INITIAL
+                                  THEN 999999
+                                  ELSE lv_top ).
 
 * ---------------------------------------------------------------------------
 * Monta relatório
@@ -608,6 +615,5 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
     ENDIF.
 
   ENDMETHOD.
-
 
 ENDCLASS.

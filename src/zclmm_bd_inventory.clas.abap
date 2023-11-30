@@ -18,6 +18,9 @@ CLASS zclmm_bd_inventory DEFINITION
       ty_report_item        TYPE zc_mm_ce_inventory_item,
       ty_t_report_item      TYPE STANDARD TABLE OF ty_report_item,
 
+      ty_overview           TYPE zc_mm_inventory_overview,
+      ty_t_overview         TYPE STANDARD TABLE OF ty_overview,
+
       ty_reported           TYPE RESPONSE FOR REPORTED EARLY zc_mm_ce_inventory_head,
       ty_failed             TYPE RESPONSE FOR FAILED EARLY zc_mm_ce_inventory_head,
       ty_t_return           TYPE STANDARD TABLE OF bapiret2,
@@ -52,11 +55,12 @@ CLASS zclmm_bd_inventory DEFINITION
       END OF gc_status_head,
 
       BEGIN OF gc_status_item,
-        pending       TYPE zc_mm_ce_inventory_item-StatusId VALUE '00', " Pendente
-        released      TYPE zc_mm_ce_inventory_item-StatusId VALUE '01', " Liberado
-        pending_count TYPE zc_mm_ce_inventory_item-StatusId VALUE '02', " Pendente Contagem
-        complete      TYPE zc_mm_ce_inventory_item-StatusId VALUE '03', " Concluido
-        canceled      TYPE zc_mm_ce_inventory_item-StatusId VALUE '04', " Cancelado
+        pending       TYPE zc_mm_ce_inventory_item-StatusId   VALUE '00', " Pendente
+        released      TYPE zc_mm_ce_inventory_item-StatusId   VALUE '01', " Liberado
+        pending_count TYPE zc_mm_ce_inventory_item-StatusId   VALUE '02', " Pendente Contagem
+        complete      TYPE zc_mm_ce_inventory_item-StatusId   VALUE '03', " Concluido
+        canceled      TYPE zc_mm_ce_inventory_item-StatusId   VALUE '04', " Cancelado
+        removed       TYPE zc_mm_ce_inventory_item-StatusId   VALUE '99', " Eliminado
       END OF gc_status_item,
 
       BEGIN OF gc_color,
@@ -185,6 +189,11 @@ CLASS zclmm_bd_inventory DEFINITION
       EXPORTING et_report         TYPE ty_t_report_item
                 et_return         TYPE ty_t_return.
 
+    METHODS build_overview
+      IMPORTING it_head        TYPE ty_t_head
+                it_report_item TYPE ty_t_report_item
+      EXPORTING et_overview    TYPE ty_t_overview.
+
 
   PROTECTED SECTION.
 
@@ -201,7 +210,25 @@ CLASS zclmm_bd_inventory DEFINITION
           gt_inventory_i TYPE SORTED TABLE OF ztmm_inventory_i
                          WITH UNIQUE KEY documentitemid,
           gt_inventory_l TYPE SORTED TABLE OF ztmm_inventory_l
-                         WITH UNIQUE KEY documentid line.
+                         WITH UNIQUE KEY documentid line,
+
+          gt_status_head TYPE SORTED TABLE OF zi_mm_vh_inventory_status
+                         WITH NON-UNIQUE KEY Status  ,
+
+          gt_status_item TYPE SORTED TABLE OF zi_mm_vh_counting_status
+                         WITH NON-UNIQUE KEY Status.
+
+    METHODS get_head_status_text
+      IMPORTING iv_statusid          TYPE zc_mm_ce_inventory_head-StatusId
+      EXPORTING ev_statustext        TYPE zc_mm_ce_inventory_head-StatusText
+                ev_statuscrit        TYPE zc_mm_ce_inventory_head-StatusCrit
+      RETURNING VALUE(rv_statustext) TYPE zc_mm_ce_inventory_head-StatusText.
+
+    METHODS get_item_status_text
+      IMPORTING iv_statusid          TYPE zc_mm_ce_inventory_item-StatusId
+      EXPORTING ev_statustext        TYPE zc_mm_ce_inventory_item-StatusText
+                ev_statuscrit        TYPE zc_mm_ce_inventory_item-StatusCrit
+      RETURNING VALUE(rv_statustext) TYPE zc_mm_ce_inventory_item-StatusText.
 
     METHODS ajust_log
       IMPORTING iv_documentid TYPE z_s41_rfc_inventory_release=>zsmm_inventory_head-documentid
@@ -597,18 +624,6 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
     FREE: et_head.
 
 * ---------------------------------------------------------------------------
-* Recupera status e descrição
-* ---------------------------------------------------------------------------
-    SELECT SINGLE Status, StatusText
-       FROM zi_mm_vh_inventory_status
-       WHERE Status = @gc_status_head-pending
-       INTO @DATA(ls_status).
-
-    IF sy-subrc NE 0.
-      CLEAR ls_status.
-    ENDIF.
-
-* ---------------------------------------------------------------------------
 * Recupera o último documento criado
 * ---------------------------------------------------------------------------
     SELECT MAX( DocumentNo )
@@ -643,8 +658,9 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
                                              THEN ls_head-DocumentId
                                              ELSE me->create_guid( IMPORTING et_return = lt_return ) ).
       ls_head-DocumentNo           = lv_DocumentNo = lv_DocumentNo + 1.
-      ls_head-statusid             = ls_status-status.
-      ls_head-statustext           = ls_status-statustext.
+
+      ls_head-statusid             = gc_status_head-pending.
+      ls_head-statustext           = me->get_head_status_text( EXPORTING iv_statusid = ls_head-statusid ).
       ls_head-createdby            = sy-uname.
       ls_head-createdat            = lv_timestamp.
       ls_head-locallastchangedat   = lv_timestamp.
@@ -748,8 +764,8 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
         ls_item-DocumentItemId       = COND #( WHEN ls_target->DocumentItemId IS NOT INITIAL
                                                THEN ls_target->DocumentItemId
                                                ELSE me->create_guid( IMPORTING et_return = lt_return ) ).
-        ls_item-statusid             = ls_status-status.
-        ls_item-statustext           = ls_status-statustext.
+        ls_item-statusid             = gc_status_item-pending.
+        ls_item-statustext           = me->get_item_status_text( EXPORTING iv_statusid = ls_item-statusid ).
         ls_item-createdby            = sy-uname.
         ls_item-createdat            = lv_timestamp.
         ls_item-locallastchangedat   = lv_timestamp.
@@ -1217,23 +1233,11 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
     CHECK et_return IS INITIAL.
 
 * ---------------------------------------------------------------------------
-* Recupera status e descrição
-* ---------------------------------------------------------------------------
-    SELECT SINGLE Status, StatusText
-       FROM zi_mm_vh_inventory_status
-       WHERE Status = @gc_status_head-canceled
-       INTO @DATA(ls_status).
-
-    IF sy-subrc NE 0.
-      CLEAR ls_status.
-    ENDIF.
-
-* ---------------------------------------------------------------------------
 * Atualiza novo status
 * ---------------------------------------------------------------------------
     LOOP AT lt_head REFERENCE INTO DATA(ls_head).
-      ls_head->StatusId   = ls_status-Status.
-      ls_head->StatusText = ls_status-StatusText.
+      ls_head->StatusId   = gc_status_head-canceled.
+      ls_head->StatusText = me->get_item_status_text( EXPORTING iv_statusid = ls_head->StatusId ).
     ENDLOOP.
 
 * ---------------------------------------------------------------------------
@@ -1494,6 +1498,14 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
                                                       THEN gc_color-critical
                                                       ELSE gc_color-new ).
 
+      ls_report-statusId                    = COND #( WHEN ls_phys_inv_info IS NOT INITIAL
+                                                      THEN ls_report-statusId
+                                                      ELSE gc_status_item-removed ).
+
+      me->get_item_status_text( EXPORTING iv_statusid   = ls_report-StatusId
+                                IMPORTING ev_statustext = ls_report-StatusText
+                                          ev_statuscrit = ls_report-StatusCrit ).
+
       ls_report-MaterialDocument            = ls_phys_inv_info-MaterialDocument.
       ls_report-MaterialDocumentYear        = ls_phys_inv_info-MaterialDocumentYear.
       ls_report-PostingDate                 = ls_phys_inv_info-postingdate.
@@ -1555,6 +1567,103 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
       GET TIME STAMP FIELD <fs_item>-LocalLastChangedAt.
     ENDLOOP.
 
+  ENDMETHOD.
+
+
+  METHOD build_overview.
+
+    FREE: et_overview.
+
+    et_overview = CORRESPONDING #( it_report_item ).
+
+    LOOP AT et_overview REFERENCE INTO DATA(ls_overview).
+
+      READ TABLE it_head REFERENCE INTO DATA(ls_head) WITH KEY DocumentId = ls_overview->DocumentId.
+
+      CHECK sy-subrc EQ 0.
+
+      ls_overview->DocumentNo          = ls_head->DocumentNo.
+      ls_overview->CountId             = ls_head->CountId.
+      ls_overview->CountDate           = ls_head->CountDate.
+      ls_overview->StatusInventoryId   = ls_head->StatusId.
+      ls_overview->StatusInventoryText = ls_head->StatusText.
+      ls_overview->StatusInventoryCrit = ls_head->StatusCrit.
+      ls_overview->Plant               = ls_head->Plant.
+      ls_overview->PlantName           = ls_head->PlantName.
+      ls_overview->Description         = ls_head->Description.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD get_head_status_text.
+
+    FREE: rv_statustext, ev_statustext, ev_statuscrit.
+
+* ---------------------------------------------------------------------------
+* Recupera descrição do status
+* ---------------------------------------------------------------------------
+    IF gt_status_head[] IS INITIAL.
+
+      SELECT Status, StatusText
+          FROM zi_mm_vh_inventory_status
+          INTO TABLE @gt_status_head.
+
+      IF sy-subrc NE 0.
+        FREE gt_status_head.
+      ENDIF.
+    ENDIF.
+
+* ---------------------------------------------------------------------------
+* Devolve descrição
+* ---------------------------------------------------------------------------
+    READ TABLE gt_status_head REFERENCE INTO DATA(ls_status) WITH KEY Status = iv_statusid.
+
+    IF sy-subrc EQ 0.
+      rv_statustext = ev_statustext = ls_status->StatusText.
+    ENDIF.
+
+    ev_statuscrit   = SWITCH #( iv_statusid
+                                WHEN gc_status_head-pending  THEN gc_color-critical
+                                WHEN gc_status_head-released THEN gc_color-positive
+                                WHEN gc_status_head-complete THEN gc_color-positive
+                                WHEN gc_status_head-canceled THEN gc_color-negative ).
+  ENDMETHOD.
+
+  METHOD get_item_status_text.
+
+    FREE: rv_statustext, ev_statustext, ev_statuscrit.
+
+* ---------------------------------------------------------------------------
+* Recupera descrição do status
+* ---------------------------------------------------------------------------
+    IF gt_status_item[] IS INITIAL.
+
+      SELECT Status, StatusText
+          FROM zi_mm_vh_counting_status
+          INTO TABLE @gt_status_item.
+
+      IF sy-subrc NE 0.
+        FREE gt_status_item.
+      ENDIF.
+    ENDIF.
+
+* ---------------------------------------------------------------------------
+* Devolve descrição
+* ---------------------------------------------------------------------------
+    READ TABLE gt_status_item REFERENCE INTO DATA(ls_status) WITH KEY Status = iv_statusid.
+
+    IF sy-subrc EQ 0.
+      rv_statustext = ev_statustext = ls_status->StatusText.
+    ENDIF.
+
+    ev_statuscrit   = SWITCH #( iv_statusid
+                                WHEN gc_status_item-pending       THEN gc_color-critical
+                                WHEN gc_status_item-released      THEN gc_color-positive
+                                WHEN gc_status_item-pending_count THEN gc_color-critical
+                                WHEN gc_status_item-complete      THEN gc_color-positive
+                                WHEN gc_status_item-canceled      THEN gc_color-negative
+                                WHEN gc_status_item-removed       THEN gc_color-negative ).
   ENDMETHOD.
 
 ENDCLASS.

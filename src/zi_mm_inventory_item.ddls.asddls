@@ -20,9 +20,11 @@ define view entity ZI_MM_INVENTORY_ITEM
 {
   key _Item.documentitemid                           as DocumentItemId,
       _Item.documentid                               as DocumentId,
+      @ObjectModel.virtualElementCalculatedBy: 'ABAP:ZCLMM_VE_INVENTORY_ITEM'
       _Item.statusid                                 as StatusId,
+      @ObjectModel.virtualElementCalculatedBy: 'ABAP:ZCLMM_VE_INVENTORY_ITEM'
       _Status.StatusText                             as StatusText,
-
+      @ObjectModel.virtualElementCalculatedBy: 'ABAP:ZCLMM_VE_INVENTORY_ITEM'
       case  _Item.statusid
       when '00' then 2    -- 'Pendente'
       when '01' then 3    -- 'Liberado'

@@ -11,7 +11,6 @@ define custom entity ZI_MM_CE_VH_STORAGE_LOCATION
       @Search.fuzzinessThreshold: 0.8
       @Search.ranking     : #HIGH
       @ObjectModel.text.element: ['PlantName']
-      @ObjectModel.sort.enabled: false
       @EndUserText.label  : 'Centro'
   key Plant               : abap.char(4);
   
@@ -22,7 +21,6 @@ define custom entity ZI_MM_CE_VH_STORAGE_LOCATION
       @Search.defaultSearchElement: true
       @Search.fuzzinessThreshold: 0.8
       @Search.ranking     : #HIGH
-      @ObjectModel.sort.enabled: false
       @EndUserText.label  : 'Depósito'
   key StorageLocation     : abap.char(4);
   
@@ -33,7 +31,6 @@ define custom entity ZI_MM_CE_VH_STORAGE_LOCATION
       @Search.defaultSearchElement: true
       @Search.fuzzinessThreshold: 0.8
       @Search.ranking     : #HIGH
-      @ObjectModel.sort.enabled: false
       @EndUserText.label  : 'Descrição do depósito'
       StorageLocationName : abap.char(16);
   
@@ -44,7 +41,6 @@ define custom entity ZI_MM_CE_VH_STORAGE_LOCATION
       @Search.defaultSearchElement: true
       @Search.fuzzinessThreshold: 0.8
       @Search.ranking     : #HIGH
-      @ObjectModel.sort.enabled: false
       @EndUserText.label  : 'Descrição do centro'
       PlantName           : abap.char(30);
 

@@ -72,22 +72,22 @@ CLASS lcl_Head IMPLEMENTATION.
       CHECK sy-subrc EQ 0.
 
       result = VALUE #( BASE result
-                      ( %tky             = ls_keys->%tky
-                        %update          = COND #( WHEN ls_head->StatusId = zclmm_bd_inventory=>gc_status_head-created
-                                                     OR ls_head->StatusId = zclmm_bd_inventory=>gc_status_head-pending
-                                                   THEN if_abap_behv=>fc-o-enabled
-                                                   ELSE if_abap_behv=>fc-o-disabled )
-                        %delete          = COND #( WHEN ls_head->StatusId = zclmm_bd_inventory=>gc_status_head-created
-                                                   THEN if_abap_behv=>fc-o-enabled
-                                                   ELSE if_abap_behv=>fc-o-disabled )
-                        %action-cancelar = COND #( WHEN ls_head->StatusId = zclmm_bd_inventory=>gc_status_head-created
-                                                     OR ls_head->StatusId = zclmm_bd_inventory=>gc_status_head-pending
-                                                   THEN if_abap_behv=>fc-o-enabled
-                                                   ELSE if_abap_behv=>fc-o-disabled )
-                        %action-liberar  = COND #( WHEN ls_head->StatusId = zclmm_bd_inventory=>gc_status_head-created
-                                                     OR ls_head->StatusId = zclmm_bd_inventory=>gc_status_head-pending
-                                                   THEN if_abap_behv=>fc-o-enabled
-                                                   ELSE if_abap_behv=>fc-o-disabled )
+                      ( %tky              = ls_keys->%tky
+                        %features-%update = COND #( WHEN ls_head->StatusId EQ zclmm_bd_inventory=>gc_status_head-pending
+                                                    THEN if_abap_behv=>fc-o-enabled
+                                                    ELSE if_abap_behv=>fc-o-disabled )
+                        %update           = COND #( WHEN ls_head->StatusId EQ zclmm_bd_inventory=>gc_status_head-pending
+                                                    THEN if_abap_behv=>fc-o-enabled
+                                                    ELSE if_abap_behv=>fc-o-disabled )
+                        %delete           = COND #( WHEN ls_head->StatusId EQ zclmm_bd_inventory=>gc_status_head-pending
+                                                    THEN if_abap_behv=>fc-o-enabled
+                                                    ELSE if_abap_behv=>fc-o-disabled )
+                        %action-cancelar  = COND #( WHEN ls_head->StatusId EQ zclmm_bd_inventory=>gc_status_head-pending
+                                                    THEN if_abap_behv=>fc-o-enabled
+                                                    ELSE if_abap_behv=>fc-o-disabled )
+                        %action-liberar   = COND #( WHEN ls_head->StatusId EQ zclmm_bd_inventory=>gc_status_head-pending
+                                                    THEN if_abap_behv=>fc-o-enabled
+                                                    ELSE if_abap_behv=>fc-o-disabled )
                       ) ).
     ENDLOOP.
 

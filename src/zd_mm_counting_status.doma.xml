@@ -48,6 +48,13 @@
      <DOMVALUE_L>04</DOMVALUE_L>
      <DDTEXT>Cancelado</DDTEXT>
     </DD07V>
+    <DD07V>
+     <DOMNAME>ZD_MM_COUNTING_STATUS</DOMNAME>
+     <VALPOS>0006</VALPOS>
+     <DDLANGUAGE>P</DDLANGUAGE>
+     <DOMVALUE_L>99</DOMVALUE_L>
+     <DDTEXT>Documento eliminado</DDTEXT>
+    </DD07V>
    </DD07V_TAB>
   </asx:values>
  </asx:abap>

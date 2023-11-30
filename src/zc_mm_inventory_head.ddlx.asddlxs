@@ -3,7 +3,7 @@
 @UI.headerInfo.typeNamePlural: 'Cockpit de Inventário'
 @UI.headerInfo.title.type: #STANDARD
 @UI.headerInfo.title.label: 'Inventário'
-@UI.headerInfo.title.value: 'DocumentNo' 
+@UI.headerInfo.title.value: 'DocumentNo'
 @UI.headerInfo.typeImageUrl: 'sap-icon://measurement-document'
 
 @UI.lineItem: [{criticality: 'StatusCrit'}]
@@ -11,7 +11,7 @@
 @UI.presentationVariant: [{sortOrder: [{ by: 'DocumentNo', direction: #DESC }],
                            visualizations: [{type: #AS_LINEITEM}]}]
 
-annotate view ZC_MM_INVENTORY_HEAD with
+annotate view ZC_MM_INVENTORY_HEAD with 
 {
   // ------------------------------------------------------
   // Header information
@@ -133,12 +133,12 @@ annotate view ZC_MM_INVENTORY_HEAD with
   @UI.lineItem              : [{ position: 45 }]
   @UI.fieldGroup            : [{ position: 30, qualifier: 'DadosGeral' }]
 
-  @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_PLANT', element: 'Plant' } }]
-//                                       additionalBinding: [{ element: 'PlantName', localElement: 'PlantName' }],
-//                                       qualifier: 'ZI_MM_CE_VH_PLANT', useForValidation: true  }]
+  @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_PLANT', element: 'Plant' },
+                                       additionalBinding: [{ element: 'PlantName', localElement: 'PlantName' }],
+                                       qualifier: 'ZI_MM_CE_VH_PLANT', useForValidation: true  }]
 
   @EndUserText.label        : 'Centro'
-  Plant;
+  Plant; 
 
   @Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_MM_CE_VH_PLANT', element: 'PlantName' },
                                        additionalBinding: [{ element: 'Plant', localElement: 'Plant' }],
@@ -159,9 +159,9 @@ annotate view ZC_MM_INVENTORY_HEAD with
 
   @EndUserText.label        : 'Criado por'
   CreatedBy;
-  
+
   @UI.hidden: true
-  
+
   CreatedByName;
 
   @UI.fieldGroup            : [{ position: 20, qualifier: 'DadosRegistro' }]
@@ -173,9 +173,9 @@ annotate view ZC_MM_INVENTORY_HEAD with
 
   @EndUserText.label        : 'Modificado por'
   LastChangedBy;
-  
+
   @UI.hidden: true
-  
+
   LastChangedByName;
 
   @UI.fieldGroup            : [{ position: 40, qualifier: 'DadosRegistro' }]

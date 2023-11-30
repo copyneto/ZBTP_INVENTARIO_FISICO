@@ -1,30 +1,21 @@
 unmanaged implementation in class zclmm_ce_inventory unique;
 strict ( 1 ); //Uncomment this line in order to enable strict mode 2. The strict mode has two variants (strict(1), strict(2)) and is prerequisite to be future proof regarding syntax and to be able to release your BO.
-//with draft;
+
+//with draft; -- Draft não é compatível com CUSTOM ENTITY!
 
 define behavior for ZC_MM_CE_INVENTORY_HEAD alias _Head
-//draft table ztmm_inv_draft_h
 lock master
-//total etag LocalLastChangedAt
 authorization master ( instance )
-//etag master LastChangedAt
-//early numbering
 {
   create;
   update ( features : instance );
   delete ( features : instance );
 
-  association _Item { create ( features : instance ); } // with draft; }
-  association _Log { } // with draft; }
+  association _Item { create ( features : instance ); }
+  association _Log { }
 
   action ( features : instance ) cancelar;
   action ( features : instance ) liberar;
-
-  //  draft action Edit;
-  //  draft action Discard;
-  //  draft action Resume;
-  //  draft determine action Prepare;
-  //  draft action Activate optimized;
 
   side effects
   {
@@ -54,7 +45,6 @@ authorization master ( instance )
 }
 
 define behavior for ZC_MM_CE_INVENTORY_ITEM alias _Item
-//draft table ztmm_inv_draft_i
 lock dependent by _Head
 authorization dependent by _Head
 etag master LastChangedAt
@@ -62,7 +52,7 @@ etag master LastChangedAt
   create;
   update ( features : instance );
   delete ( features : instance );
-  association _Head; // with draft; }
+  association _Head;
 
   field ( readonly )
   DocumentId,
@@ -110,12 +100,11 @@ etag master LastChangedAt
 }
 
 define behavior for ZC_MM_CE_INVENTORY_LOG alias _Log
-//draft table ztmm_inv_draft_l
 lock dependent by _Head
 authorization dependent by _Head
 etag master LastChangedAt
 {
-  association _Head; // with draft; }
+  association _Head;
 
   field ( readonly )
   DocumentId;

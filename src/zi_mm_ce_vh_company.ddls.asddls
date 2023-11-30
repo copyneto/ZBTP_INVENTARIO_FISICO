@@ -8,8 +8,7 @@ define custom entity ZI_MM_CE_VH_COMPANY
       @UI.lineItem       : [{ position: 10 }]
       
       @Search         : { defaultSearchElement: true, fuzzinessThreshold: 0.8, ranking: #HIGH  }
-      @ObjectModel    : { text.element: ['CompanyCodeName'],
-                          sort.enabled: false }
+      @ObjectModel    : { text.element: ['CompanyCodeName'] }
       @EndUserText.label: 'Empresa'
   key CompanyCode     : abap.char(4);
   
@@ -18,7 +17,6 @@ define custom entity ZI_MM_CE_VH_COMPANY
 
       @Semantics.text : true
       @Search         : { defaultSearchElement: true, fuzzinessThreshold: 0.8, ranking: #LOW  }
-      @ObjectModel.sort.enabled: false
       @EndUserText.label: 'Descrição da empresa'
       CompanyCodeName : abap.char(25);
 
