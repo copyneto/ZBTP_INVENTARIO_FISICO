@@ -38,7 +38,36 @@ CLASS zclmm_bd_inventory DEFINITION
         update  TYPE abap_boolean,
         delete  TYPE abap_boolean,
         release TYPE abap_boolean,
-      END OF ty_operation.
+      END OF ty_operation,
+
+      BEGIN OF ty_head_filter,
+        DocumentId  TYPE RANGE OF zc_mm_inventory_head-DocumentId,
+        DocumentNo  TYPE RANGE OF zc_mm_inventory_head-DocumentNo,
+        CountId     TYPE RANGE OF zc_mm_inventory_head-CountId,
+        CountDate   TYPE RANGE OF zc_mm_inventory_head-CountDate,
+        StatusId    TYPE RANGE OF zc_mm_inventory_head-StatusId,
+        StatusText  TYPE RANGE OF zc_mm_inventory_head-StatusText,
+        Plant       TYPE RANGE OF zc_mm_inventory_head-Plant,
+        PlantName   TYPE RANGE OF zc_mm_inventory_head-PlantName,
+        Description TYPE RANGE OF zc_mm_inventory_head-Description,
+      END OF ty_head_filter,
+
+      BEGIN OF ty_item_filter,
+        DocumentId                TYPE RANGE OF zc_mm_inventory_item-DocumentId,
+        DocumentItemId            TYPE RANGE OF zc_mm_inventory_item-DocumentItemId,
+        StatusId                  TYPE RANGE OF zc_mm_inventory_item-StatusId,
+        StatusText                TYPE RANGE OF zc_mm_inventory_item-StatusText,
+        Material                  TYPE RANGE OF zc_mm_inventory_item-Material,
+        MaterialName              TYPE RANGE OF zc_mm_inventory_item-MaterialName,
+        StorageLocation           TYPE RANGE OF zc_mm_inventory_item-StorageLocation,
+        StorageLocationName       TYPE RANGE OF zc_mm_inventory_item-StorageLocationName,
+        Batch                     TYPE RANGE OF zc_mm_inventory_item-Batch,
+        QuantityCount             TYPE RANGE OF zc_mm_inventory_item-QuantityCount,
+        Unit                      TYPE RANGE OF zc_mm_inventory_item-Unit,
+        Accuracy                  TYPE RANGE OF zc_mm_inventory_item-Accuracy,
+        PhysicalInventoryDocument TYPE RANGE OF zc_mm_inventory_item-PhysicalInventoryDocument,
+        FiscalYear                TYPE RANGE OF zc_mm_inventory_item-FiscalYear,
+      END OF ty_item_filter.
 
     CONSTANTS:
       BEGIN OF gc_cds,
@@ -87,13 +116,17 @@ CLASS zclmm_bd_inventory DEFINITION
 
     "! Recupera as informações de inventário
     METHODS get_data
-      IMPORTING it_head_key TYPE ty_t_head OPTIONAL
-                it_item_key TYPE ty_t_item OPTIONAL
-                it_log_key  TYPE ty_t_log OPTIONAL
-      EXPORTING et_head     TYPE ty_t_head
-                et_item     TYPE ty_t_item
-                et_log      TYPE ty_t_log
-                et_return   TYPE ty_t_return.
+      IMPORTING it_head_key        TYPE ty_t_head OPTIONAL
+                it_item_key        TYPE ty_t_item OPTIONAL
+                it_log_key         TYPE ty_t_log OPTIONAL
+                is_head_filter     TYPE ty_head_filter OPTIONAL
+                is_item_filter     TYPE Ty_item_filter OPTIONAL
+                iv_get_from_memory TYPE abap_boolean OPTIONAL
+                iv_get_all         TYPE abap_boolean OPTIONAL
+      EXPORTING et_head            TYPE ty_t_head
+                et_item            TYPE ty_t_item
+                et_log             TYPE ty_t_log
+                et_return          TYPE ty_t_return.
 
     "! Cria linha de cabeçalho
     METHODS create_head
@@ -171,12 +204,13 @@ CLASS zclmm_bd_inventory DEFINITION
 
     "! Chama RFC e recupera dados de inventário
     METHODS call_rfc_inventory_get_info
-      IMPORTING it_rfc_head       TYPE z_s41_rfc_inventory_get_info=>zctgmm_inventory_head
-                it_rfc_item       TYPE z_s41_rfc_inventory_get_info=>zctgmm_inventory_item
-      EXPORTING et_material_stock TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_material_stock
-                et_material_price TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_material_price
-                et_phys_inv_info  TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_phys_inv_info
-                et_return         TYPE ty_t_return.
+      IMPORTING it_rfc_head        TYPE z_s41_rfc_inventory_get_info=>zctgmm_inventory_head
+                it_rfc_item        TYPE z_s41_rfc_inventory_get_info=>zctgmm_inventory_item
+                iv_get_from_memory TYPE abap_boolean
+      EXPORTING et_material_stock  TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_material_stock
+                et_material_price  TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_material_price
+                et_phys_inv_info   TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_phys_inv_info
+                et_return          TYPE ty_t_return.
 
     "! Constrói o relatório a nível de item
     METHODS build_report_item
@@ -201,22 +235,36 @@ CLASS zclmm_bd_inventory DEFINITION
 
     CLASS-DATA go_instance TYPE REF TO zclmm_bd_inventory.
 
-    DATA: gs_operation   TYPE ty_operation,
+    DATA: gs_operation      TYPE ty_operation,
 
-          gt_release_h   TYPE ty_t_head,
+          gt_release_h      TYPE ty_t_head,
 
-          gt_inventory_h TYPE SORTED TABLE OF ztmm_inventory_h
+          gt_inventory_h    TYPE SORTED TABLE OF ztmm_inventory_h
                          WITH UNIQUE KEY documentid,
-          gt_inventory_i TYPE SORTED TABLE OF ztmm_inventory_i
+          gt_inventory_i    TYPE SORTED TABLE OF ztmm_inventory_i
                          WITH UNIQUE KEY documentitemid,
-          gt_inventory_l TYPE SORTED TABLE OF ztmm_inventory_l
+          gt_inventory_l    TYPE SORTED TABLE OF ztmm_inventory_l
                          WITH UNIQUE KEY documentid line,
 
-          gt_status_head TYPE SORTED TABLE OF zi_mm_vh_inventory_status
+          gt_status_head    TYPE SORTED TABLE OF zi_mm_vh_inventory_status
                          WITH NON-UNIQUE KEY Status  ,
 
-          gt_status_item TYPE SORTED TABLE OF zi_mm_vh_counting_status
-                         WITH NON-UNIQUE KEY Status.
+          gt_status_item    TYPE SORTED TABLE OF zi_mm_vh_counting_status
+                         WITH NON-UNIQUE KEY Status,
+
+          gt_head_key       TYPE zclmm_bd_inventory=>ty_t_head,
+          gt_item_key       TYPE zclmm_bd_inventory=>ty_t_item,
+          gt_log_key        TYPE zclmm_bd_inventory=>ty_t_log,
+          gs_head_filter    TYPE zclmm_bd_inventory=>ty_head_filter,
+          gs_item_filter    TYPE zclmm_bd_inventory=>ty_item_filter,
+
+          gt_head           TYPE zclmm_bd_inventory=>ty_t_head,
+          gt_item           TYPE zclmm_bd_inventory=>ty_t_item,
+          gt_log            TYPE zclmm_bd_inventory=>ty_t_log,
+          gt_material_stock TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_material_stock,
+          gt_material_price TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_material_price,
+          gt_phys_inv_info  TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_phys_inv_info.
+
 
     METHODS get_head_status_text
       IMPORTING iv_statusid          TYPE zc_mm_ce_inventory_head-StatusId
@@ -242,6 +290,9 @@ CLASS zclmm_bd_inventory DEFINITION
     METHODS ajust_item
       IMPORTING it_rfc_item TYPE z_s41_rfc_inventory_release=>zctgmm_inventory_item
       CHANGING  ct_item     TYPE ty_t_item.
+
+    METHODS clean_memory.
+
 
 ENDCLASS.
 
@@ -288,6 +339,29 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
     FREE: et_head, et_item, et_log, et_return.
 
 * ---------------------------------------------------------------------------
+* Verifica se os mesmos filtros foram informados. Neste caso vamos verificar
+* e recuperar os resultados anteriores
+* ---------------------------------------------------------------------------
+    IF  iv_get_from_memory EQ abap_true
+    AND it_head_key    EQ gt_head_key
+    AND it_item_key    EQ gt_item_key
+    AND it_log_key     EQ gt_log_key
+    AND is_head_filter EQ gs_head_filter
+    AND is_item_filter EQ gs_item_filter.
+
+      IF gt_head IS NOT INITIAL
+      OR gt_item IS NOT INITIAL
+      OR gt_log  IS NOT INITIAL.
+
+        et_head = gt_head.
+        et_item = gt_item.
+        et_log  = gt_log.
+        RETURN.
+
+      ENDIF.
+    ENDIF.
+
+* ---------------------------------------------------------------------------
 * Prepara as tabelas de chave
 * ---------------------------------------------------------------------------
     IF it_head_key IS SUPPLIED.
@@ -316,7 +390,7 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 * ---------------------------------------------------------------------------
 * Recupera dados de cabeçalho
 * ---------------------------------------------------------------------------
-    IF et_head IS REQUESTED AND lt_head_key[] IS NOT INITIAL.
+    IF et_head IS REQUESTED AND ( lt_head_key[] IS NOT INITIAL OR iv_get_all EQ abap_true ).
 
       SELECT DocumentId,
              DocumentNo,
@@ -335,7 +409,16 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
              LocalLastChangedAt
          FROM zi_mm_ce_inventory_head
          FOR ALL ENTRIES IN @lt_head_key
-         WHERE DocumentId = @lt_head_key-DocumentId
+         WHERE DocumentId   EQ @lt_head_key-DocumentId
+           AND DocumentId   IN @is_head_filter-DocumentId
+           AND DocumentNo   IN @is_head_filter-DocumentNo
+           AND CountId      IN @is_head_filter-CountId
+           AND CountDate    IN @is_head_filter-CountDate
+           AND StatusId     IN @is_head_filter-StatusId
+           AND StatusText   IN @is_head_filter-StatusText
+           AND Plant        IN @is_head_filter-Plant
+           AND PlantName    IN @is_head_filter-PlantName
+           AND Description  IN @is_head_filter-Description
          INTO CORRESPONDING FIELDS OF TABLE @et_head.
 
       IF sy-subrc EQ 0.
@@ -360,7 +443,16 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
              LocalLastChangedAt
          FROM ztmm_inv_draft_h
          FOR ALL ENTRIES IN @lt_head_key
-         WHERE DocumentId = @lt_head_key-DocumentId
+         WHERE DocumentId   EQ @lt_head_key-DocumentId
+           AND DocumentId   IN @is_head_filter-DocumentId
+           AND DocumentNo   IN @is_head_filter-DocumentNo
+           AND CountId      IN @is_head_filter-CountId
+           AND CountDate    IN @is_head_filter-CountDate
+           AND StatusId     IN @is_head_filter-StatusId
+           AND StatusText   IN @is_head_filter-StatusText
+           AND Plant        IN @is_head_filter-Plant
+           AND PlantName    IN @is_head_filter-PlantName
+           AND Description  IN @is_head_filter-Description
          APPENDING CORRESPONDING FIELDS OF TABLE @et_head.
 
       IF sy-subrc EQ 0.
@@ -372,7 +464,7 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 * ---------------------------------------------------------------------------
 * Recupera dados de item
 * ---------------------------------------------------------------------------
-    IF et_item IS REQUESTED AND lt_item_key[] IS NOT INITIAL.
+    IF et_item IS REQUESTED AND ( lt_item_key[] IS NOT INITIAL OR iv_get_all EQ abap_true ).
 
       SELECT DocumentId,
              DocumentItemId,
@@ -395,8 +487,19 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
              LocalLastChangedAt
          FROM zi_mm_ce_inventory_item
          FOR ALL ENTRIES IN @lt_item_key
-         WHERE DocumentId     = @lt_item_key-DocumentId
-           AND DocumentItemId = @lt_item_key-DocumentItemId
+         WHERE DocumentId                 EQ @lt_item_key-DocumentId
+           AND DocumentItemId             EQ @lt_item_key-DocumentItemId
+           AND DocumentId                 IN @is_item_filter-DocumentId
+           AND DocumentItemId             IN @is_item_filter-DocumentItemId
+           AND StatusId                   IN @is_item_filter-StatusId
+           AND StatusText                 IN @is_item_filter-StatusText
+           AND Material                   IN @is_item_filter-Material
+           AND MaterialName               IN @is_item_filter-MaterialName
+           AND StorageLocation            IN @is_item_filter-StorageLocation
+           AND StorageLocationName        IN @is_item_filter-StorageLocationName
+           AND Batch                      IN @is_item_filter-Batch
+           AND QuantityCount              IN @is_item_filter-QuantityCount
+           AND Unit                       IN @is_item_filter-Unit
          INTO CORRESPONDING FIELDS OF TABLE @et_item.
 
       IF sy-subrc EQ 0.
@@ -425,8 +528,19 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
              LocalLastChangedAt
          FROM ztmm_inv_draft_i
          FOR ALL ENTRIES IN @lt_item_key
-         WHERE DocumentId     = @lt_item_key-DocumentId
-           AND DocumentItemId = @lt_item_key-DocumentItemId
+         WHERE DocumentId                 EQ @lt_item_key-DocumentId
+           AND DocumentItemId             EQ @lt_item_key-DocumentItemId
+           AND DocumentId                 IN @is_item_filter-DocumentId
+           AND DocumentItemId             IN @is_item_filter-DocumentItemId
+           AND StatusId                   IN @is_item_filter-StatusId
+           AND StatusText                 IN @is_item_filter-StatusText
+           AND Material                   IN @is_item_filter-Material
+           AND MaterialName               IN @is_item_filter-MaterialName
+           AND StorageLocation            IN @is_item_filter-StorageLocation
+           AND StorageLocationName        IN @is_item_filter-StorageLocationName
+           AND Batch                      IN @is_item_filter-Batch
+           AND QuantityCount              IN @is_item_filter-QuantityCount
+           AND Unit                       IN @is_item_filter-Unit
          APPENDING CORRESPONDING FIELDS OF TABLE @et_item.
 
       IF sy-subrc EQ 0.
@@ -456,7 +570,18 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
              LocalLastChangedAt
          FROM zi_mm_ce_inventory_item
          FOR ALL ENTRIES IN @lt_head_key
-         WHERE DocumentId     = @lt_head_key-DocumentId
+         WHERE DocumentId                 EQ @lt_head_key-DocumentId
+           AND DocumentId                 IN @is_item_filter-DocumentId
+           AND DocumentItemId             IN @is_item_filter-DocumentItemId
+           AND StatusId                   IN @is_item_filter-StatusId
+           AND StatusText                 IN @is_item_filter-StatusText
+           AND Material                   IN @is_item_filter-Material
+           AND MaterialName               IN @is_item_filter-MaterialName
+           AND StorageLocation            IN @is_item_filter-StorageLocation
+           AND StorageLocationName        IN @is_item_filter-StorageLocationName
+           AND Batch                      IN @is_item_filter-Batch
+           AND QuantityCount              IN @is_item_filter-QuantityCount
+           AND Unit                       IN @is_item_filter-Unit
          INTO CORRESPONDING FIELDS OF TABLE @et_item.
 
       IF sy-subrc EQ 0.
@@ -485,7 +610,18 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
              LocalLastChangedAt
           FROM ztmm_inv_draft_i
           FOR ALL ENTRIES IN @lt_head_key
-          WHERE DocumentId     = @lt_head_key-DocumentId
+          WHERE DocumentId                 EQ @lt_head_key-DocumentId
+            AND DocumentId                 IN @is_item_filter-DocumentId
+            AND DocumentItemId             IN @is_item_filter-DocumentItemId
+            AND StatusId                   IN @is_item_filter-StatusId
+            AND StatusText                 IN @is_item_filter-StatusText
+            AND Material                   IN @is_item_filter-Material
+            AND MaterialName               IN @is_item_filter-MaterialName
+            AND StorageLocation            IN @is_item_filter-StorageLocation
+            AND StorageLocationName        IN @is_item_filter-StorageLocationName
+            AND Batch                      IN @is_item_filter-Batch
+            AND QuantityCount              IN @is_item_filter-QuantityCount
+            AND Unit                       IN @is_item_filter-Unit
           APPENDING CORRESPONDING FIELDS OF TABLE @et_item.
 
       IF sy-subrc EQ 0.
@@ -497,7 +633,7 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 * ---------------------------------------------------------------------------
 * Recupera dados de log
 * ---------------------------------------------------------------------------
-    IF et_log IS REQUESTED AND lt_log_key[] IS NOT INITIAL.
+    IF et_log IS REQUESTED AND ( lt_log_key[] IS NOT INITIAL OR iv_get_all EQ abap_true ).
 
       SELECT DocumentId,
              Line,
@@ -610,6 +746,10 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
       ENDIF.
 
     ENDIF.
+
+    gt_head = et_head.
+    gt_item = et_item.
+    gt_log  = et_log.
 
   ENDMETHOD.
 
@@ -1011,11 +1151,7 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 * ---------------------------------------------------------------------------
 * Limpa os dados em memória
 * ---------------------------------------------------------------------------
-    FREE: gs_operation,
-          gt_inventory_h,
-          gt_inventory_i,
-          gt_inventory_l,
-          gt_release_h.
+    me->clean_memory( ).
 
   ENDMETHOD.
 
@@ -1286,12 +1422,37 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 
     DATA: lo_dest  TYPE REF TO if_rfc_dest,
           lo_myobj TYPE REF TO z_s41_rfc_inventory_get_info,
+          lt_head  TYPE ty_t_head,
+          lt_item  TYPE ty_t_item,
           lv_text  TYPE bapiret2-message.
 
     FREE: et_material_stock, et_material_price, et_phys_inv_info, et_return.
 
     CHECK it_rfc_head IS NOT INITIAL.
     CHECK it_rfc_item IS NOT INITIAL.
+
+* ---------------------------------------------------------------------------
+* Verifica se são os mesmos filtros foram informados. Neste caso vamos verificar
+* e recuperar os resultados anteriores
+* ---------------------------------------------------------------------------
+    lt_head = CORRESPONDING #( it_rfc_head ).
+    lt_item = CORRESPONDING #( it_rfc_item ).
+
+    IF  iv_get_from_memory EQ abap_true
+    AND lt_head            EQ gt_head
+    AND lt_item            EQ gt_item.
+
+      IF gt_material_stock IS NOT INITIAL
+      OR gt_material_price IS NOT INITIAL
+      OR gt_phys_inv_info  IS NOT INITIAL.
+
+        et_material_stock = gt_material_stock.
+        et_material_price = gt_material_price.
+        et_phys_inv_info  = gt_phys_inv_info.
+        RETURN.
+
+      ENDIF.
+    ENDIF.
 
 * ----------------------------------------------------------------------
 * Chama RFC
@@ -1331,6 +1492,10 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
     SORT et_material_stock BY enddate material plant storagelocation batch materialbaseunit.
     SORT et_material_price BY valuationarea Material baseunit currency.
     SORT et_phys_inv_info BY fiscalyear physicalinventorydocument.
+
+    gt_material_stock = et_material_stock.
+    gt_material_price = et_material_price.
+    gt_phys_inv_info  = et_phys_inv_info.
 
   ENDMETHOD.
 
@@ -1498,9 +1663,11 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
                                                       THEN gc_color-critical
                                                       ELSE gc_color-new ).
 
-      ls_report-statusId                    = COND #( WHEN ls_phys_inv_info IS NOT INITIAL
-                                                      THEN ls_report-statusId
-                                                      ELSE gc_status_item-removed ).
+      ls_report-statusId                    = COND #( WHEN ls_phys_inv_info IS INITIAL
+                                                       AND ( ls_head->StatusId EQ gc_status_head-released
+                                                          OR ls_head->StatusId EQ gc_status_head-released )
+                                                      THEN gc_status_item-removed
+                                                      ELSE ls_report-statusId ).
 
       me->get_item_status_text( EXPORTING iv_statusid   = ls_report-StatusId
                                 IMPORTING ev_statustext = ls_report-StatusText
@@ -1664,6 +1831,16 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
                                 WHEN gc_status_item-complete      THEN gc_color-positive
                                 WHEN gc_status_item-canceled      THEN gc_color-negative
                                 WHEN gc_status_item-removed       THEN gc_color-negative ).
+  ENDMETHOD.
+
+  METHOD clean_memory.
+
+    FREE: gs_operation,
+          gt_inventory_h,
+          gt_inventory_i,
+          gt_inventory_l,
+          gt_release_h.
+
   ENDMETHOD.
 
 ENDCLASS.
