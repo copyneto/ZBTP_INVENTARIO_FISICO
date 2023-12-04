@@ -121,8 +121,6 @@ CLASS zclmm_bd_inventory DEFINITION
                 it_log_key         TYPE ty_t_log OPTIONAL
                 is_head_filter     TYPE ty_head_filter OPTIONAL
                 is_item_filter     TYPE Ty_item_filter OPTIONAL
-                iv_get_from_memory TYPE abap_boolean OPTIONAL
-                iv_get_all         TYPE abap_boolean OPTIONAL
       EXPORTING et_head            TYPE ty_t_head
                 et_item            TYPE ty_t_item
                 et_log             TYPE ty_t_log
@@ -206,7 +204,6 @@ CLASS zclmm_bd_inventory DEFINITION
     METHODS call_rfc_inventory_get_info
       IMPORTING it_rfc_head        TYPE z_s41_rfc_inventory_get_info=>zctgmm_inventory_head
                 it_rfc_item        TYPE z_s41_rfc_inventory_get_info=>zctgmm_inventory_item
-                iv_get_from_memory TYPE abap_boolean
       EXPORTING et_material_stock  TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_material_stock
                 et_material_price  TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_material_price
                 et_phys_inv_info   TYPE z_s41_rfc_inventory_get_info=>zctgmm_inv_phys_inv_info
@@ -291,8 +288,7 @@ CLASS zclmm_bd_inventory DEFINITION
       IMPORTING it_rfc_item TYPE z_s41_rfc_inventory_release=>zctgmm_inventory_item
       CHANGING  ct_item     TYPE ty_t_item.
 
-    METHODS clean_memory.
-
+    METHODS clean_commit.
 
 ENDCLASS.
 
@@ -339,29 +335,6 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
     FREE: et_head, et_item, et_log, et_return.
 
 * ---------------------------------------------------------------------------
-* Verifica se os mesmos filtros foram informados. Neste caso vamos verificar
-* e recuperar os resultados anteriores
-* ---------------------------------------------------------------------------
-    IF  iv_get_from_memory EQ abap_true
-    AND it_head_key    EQ gt_head_key
-    AND it_item_key    EQ gt_item_key
-    AND it_log_key     EQ gt_log_key
-    AND is_head_filter EQ gs_head_filter
-    AND is_item_filter EQ gs_item_filter.
-
-      IF gt_head IS NOT INITIAL
-      OR gt_item IS NOT INITIAL
-      OR gt_log  IS NOT INITIAL.
-
-        et_head = gt_head.
-        et_item = gt_item.
-        et_log  = gt_log.
-        RETURN.
-
-      ENDIF.
-    ENDIF.
-
-* ---------------------------------------------------------------------------
 * Prepara as tabelas de chave
 * ---------------------------------------------------------------------------
     IF it_head_key IS SUPPLIED.
@@ -390,7 +363,7 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 * ---------------------------------------------------------------------------
 * Recupera dados de cabeçalho
 * ---------------------------------------------------------------------------
-    IF et_head IS REQUESTED AND ( lt_head_key[] IS NOT INITIAL OR iv_get_all EQ abap_true ).
+    IF et_head IS REQUESTED AND ( lt_head_key[] IS NOT INITIAL OR is_head_filter IS SUPPLIED ).
 
       SELECT DocumentId,
              DocumentNo,
@@ -464,7 +437,7 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 * ---------------------------------------------------------------------------
 * Recupera dados de item
 * ---------------------------------------------------------------------------
-    IF et_item IS REQUESTED AND ( lt_item_key[] IS NOT INITIAL OR iv_get_all EQ abap_true ).
+    IF et_item IS REQUESTED AND ( lt_item_key[] IS NOT INITIAL OR is_item_filter IS SUPPLIED ).
 
       SELECT DocumentId,
              DocumentItemId,
@@ -547,7 +520,7 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
         SORT et_item BY DocumentId DocumentItemId.
       ENDIF.
 
-    ELSEIF et_item IS REQUESTED AND lt_head_key[] IS NOT INITIAL.
+    ELSEIF et_item IS REQUESTED AND ( lt_head_key[] IS NOT INITIAL OR is_item_filter IS SUPPLIED ).
 
       SELECT DocumentId,
              DocumentItemId,
@@ -633,7 +606,7 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 * ---------------------------------------------------------------------------
 * Recupera dados de log
 * ---------------------------------------------------------------------------
-    IF et_log IS REQUESTED AND ( lt_log_key[] IS NOT INITIAL OR iv_get_all EQ abap_true ).
+    IF et_log IS REQUESTED AND ( lt_log_key[] IS NOT INITIAL OR is_head_filter IS SUPPLIED ).
 
       SELECT DocumentId,
              Line,
@@ -690,7 +663,7 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
         SORT et_log BY DocumentId Line.
       ENDIF.
 
-    ELSEIF et_log IS REQUESTED AND lt_head_key[] IS NOT INITIAL.
+    ELSEIF et_log IS REQUESTED AND ( lt_head_key[] IS NOT INITIAL OR is_head_filter IS SUPPLIED ).
 
       SELECT DocumentId,
              Line,
@@ -1151,7 +1124,7 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 * ---------------------------------------------------------------------------
 * Limpa os dados em memória
 * ---------------------------------------------------------------------------
-    me->clean_memory( ).
+    me->clean_commit( ).
 
   ENDMETHOD.
 
@@ -1430,29 +1403,6 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 
     CHECK it_rfc_head IS NOT INITIAL.
     CHECK it_rfc_item IS NOT INITIAL.
-
-* ---------------------------------------------------------------------------
-* Verifica se são os mesmos filtros foram informados. Neste caso vamos verificar
-* e recuperar os resultados anteriores
-* ---------------------------------------------------------------------------
-    lt_head = CORRESPONDING #( it_rfc_head ).
-    lt_item = CORRESPONDING #( it_rfc_item ).
-
-    IF  iv_get_from_memory EQ abap_true
-    AND lt_head            EQ gt_head
-    AND lt_item            EQ gt_item.
-
-      IF gt_material_stock IS NOT INITIAL
-      OR gt_material_price IS NOT INITIAL
-      OR gt_phys_inv_info  IS NOT INITIAL.
-
-        et_material_stock = gt_material_stock.
-        et_material_price = gt_material_price.
-        et_phys_inv_info  = gt_phys_inv_info.
-        RETURN.
-
-      ENDIF.
-    ENDIF.
 
 * ----------------------------------------------------------------------
 * Chama RFC
@@ -1833,7 +1783,7 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
                                 WHEN gc_status_item-removed       THEN gc_color-negative ).
   ENDMETHOD.
 
-  METHOD clean_memory.
+  METHOD clean_commit.
 
     FREE: gs_operation,
           gt_inventory_h,
