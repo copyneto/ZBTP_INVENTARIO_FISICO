@@ -294,7 +294,8 @@ ENDCLASS.
 
 
 
-CLASS zclmm_bd_inventory IMPLEMENTATION.
+CLASS ZCLMM_BD_INVENTORY IMPLEMENTATION.
+
 
   METHOD get_instance.
 
@@ -309,19 +310,156 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 
   ENDMETHOD.
 
-  METHOD create_guid.
 
-    FREE: rv_guid, et_return.
+  METHOD ajust_log.
 
+    FREE: et_log.
 * ---------------------------------------------------------------------------
-* Cria novo GUID
+* Recupera última mensagem criada
 * ---------------------------------------------------------------------------
+    SELECT MAX( line )
+        FROM ztmm_inventory_l
+        WHERE documentid = @iv_documentid
+        INTO @DATA(lv_seqnr).
+
+    IF sy-subrc NE 0.
+      lv_seqnr = 1.
+    ENDIF.
+* ---------------------------------------------------------------------------
+* Prepara mensagens
+* ---------------------------------------------------------------------------
+    et_log = CORRESPONDING #( it_rfc_log ).
+
+    LOOP AT et_log ASSIGNING FIELD-SYMBOL(<fs_log>).
+      <fs_log>-line          = sy-tabix + lv_seqnr.
+      <fs_log>-CreatedBy     = sy-uname.
+      <fs_log>-LastChangedBy = sy-uname.
+      GET TIME STAMP FIELD <fs_log>-CreatedAt.
+      GET TIME STAMP FIELD <fs_log>-LastChangedAt.
+      GET TIME STAMP FIELD <fs_log>-LocalLastChangedAt.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+
+  METHOD call_rfc_inventory_get_info.
+
+    DATA: lo_dest  TYPE REF TO if_rfc_dest,
+          lo_myobj TYPE REF TO z_s41_rfc_inventory_get_info,
+          lt_head  TYPE ty_t_head,
+          lt_item  TYPE ty_t_item,
+          lv_text  TYPE bapiret2-message.
+
+    FREE: et_material_stock, et_material_price, et_phys_inv_info, et_return.
+
+    CHECK it_rfc_head IS NOT INITIAL.
+    CHECK it_rfc_item IS NOT INITIAL.
+
+* ----------------------------------------------------------------------
+* Chama RFC
+* ----------------------------------------------------------------------
     TRY.
-        rv_guid = cl_system_uuid=>create_uuid_x16_static( ).
-      CATCH cx_uuid_error.
-        " Falha ao criar GUID.
-        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_INVENTORY' number = '001' ) ).
+        lo_dest = cl_rfc_destination_provider=>create_by_cloud_destination( i_name = 'S41_RFC_120' ).
+
+        CREATE OBJECT lo_myobj
+          EXPORTING
+            destination = lo_dest.
+
+        " Execução da BAPI via RFC
+        lo_myobj->zfmmm_inventory_get_info(
+           EXPORTING
+             it_head           = it_rfc_head
+             it_item           = it_rfc_item
+           IMPORTING
+             et_material_stock = et_material_stock
+             et_material_price = et_material_price
+             et_phys_inv_info  = et_phys_inv_info
+         ).
+
+      CATCH  cx_aco_communication_failure INTO DATA(lo_comm).
+        lv_text = lo_comm->get_longtext( ).
+        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
+      CATCH cx_aco_system_failure INTO DATA(lo_sys).
+        lv_text = lo_sys->get_longtext( ).
+        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
+      CATCH cx_aco_application_exception INTO DATA(lo_appl).
+        lv_text = lo_appl->get_longtext( ).
+        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
+      CATCH cx_rfc_dest_provider_error INTO DATA(lo_error).
+        lv_text = lo_error->get_longtext( ).
+        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
     ENDTRY.
+
+    SORT et_material_stock BY enddate material plant storagelocation batch materialbaseunit.
+    SORT et_material_price BY valuationarea Material baseunit currency.
+    SORT et_phys_inv_info BY fiscalyear physicalinventorydocument.
+
+    gt_material_stock = et_material_stock.
+    gt_material_price = et_material_price.
+    gt_phys_inv_info  = et_phys_inv_info.
+
+  ENDMETHOD.
+
+
+  METHOD create_head.
+
+    DATA: lt_return    TYPE ty_t_return,
+          lv_timestamp TYPE timestampl.
+
+    GET TIME STAMP FIELD lv_timestamp.
+
+    FREE: et_head.
+
+* ---------------------------------------------------------------------------
+* Recupera o último documento criado
+* ---------------------------------------------------------------------------
+    SELECT MAX( DocumentNo )
+        FROM zi_mm_ce_inventory_head
+        WHERE DocumentNo IS NOT INITIAL
+        INTO @DATA(lv_DocumentNo).
+
+    IF sy-subrc NE 0.
+      lv_DocumentNo = 0.
+    ENDIF.
+
+    SELECT MAX( DocumentNo )
+        FROM ztmm_inv_draft_h
+        WHERE DocumentNo IS NOT INITIAL
+        INTO @DATA(lv_DocumentNoDraft).
+
+    IF sy-subrc NE 0.
+      lv_DocumentNo = 0.
+    ENDIF.
+
+    lv_DocumentNo = COND #( WHEN lv_DocumentNo >= lv_DocumentNoDraft
+                            THEN lv_DocumentNo
+                            ELSE lv_DocumentNoDraft ).
+
+* ---------------------------------------------------------------------------
+* Cria nova linha de cabeçalho
+* ---------------------------------------------------------------------------
+    LOOP AT it_entities REFERENCE INTO DATA(ls_entity).
+
+      DATA(ls_head) = ls_entity->*.
+      ls_head-documentid           = COND #( WHEN ls_head-DocumentId IS NOT INITIAL
+                                             THEN ls_head-DocumentId
+                                             ELSE me->create_guid( IMPORTING et_return = lt_return ) ).
+      ls_head-DocumentNo           = lv_DocumentNo = lv_DocumentNo + 1.
+
+      ls_head-statusid             = gc_status_head-pending.
+      ls_head-statustext           = me->get_head_status_text( EXPORTING iv_statusid = ls_head-statusid ).
+      ls_head-createdby            = sy-uname.
+      ls_head-createdat            = lv_timestamp.
+      ls_head-locallastchangedat   = lv_timestamp.
+
+      et_head = VALUE #( BASE et_head ( CORRESPONDING #( ls_head ) ) ).
+
+      INSERT LINES OF lt_return INTO TABLE et_return.
+
+    ENDLOOP.
+
+    SORT et_head BY DocumentId.
 
   ENDMETHOD.
 
@@ -727,66 +865,195 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD create_head.
-
-    DATA: lt_return    TYPE ty_t_return,
-          lv_timestamp TYPE timestampl.
-
-    GET TIME STAMP FIELD lv_timestamp.
-
-    FREE: et_head.
+  METHOD cancel_inventory.
 
 * ---------------------------------------------------------------------------
-* Recupera o último documento criado
+* Recupera dados de cabeçalho
 * ---------------------------------------------------------------------------
-    SELECT MAX( DocumentNo )
-        FROM zi_mm_ce_inventory_head
-        WHERE DocumentNo IS NOT INITIAL
-        INTO @DATA(lv_DocumentNo).
+    me->get_data( EXPORTING it_head_key = it_head_key
+                  IMPORTING et_head     = DATA(lt_head)
+                            et_return   = et_return ).
 
-    IF sy-subrc NE 0.
-      lv_DocumentNo = 0.
+    CHECK et_return IS INITIAL.
+
+* ---------------------------------------------------------------------------
+* Atualiza novo status
+* ---------------------------------------------------------------------------
+    LOOP AT lt_head REFERENCE INTO DATA(ls_head).
+      ls_head->StatusId   = gc_status_head-canceled.
+      ls_head->StatusText = me->get_item_status_text( EXPORTING iv_statusid = ls_head->StatusId ).
+    ENDLOOP.
+
+* ---------------------------------------------------------------------------
+* Prepara os dados para serem inseridos posteriormente no método COMMIT
+* ---------------------------------------------------------------------------
+    me->prepare_commit( EXPORTING iv_update = abap_true
+                                  it_head   = lt_head
+                        IMPORTING et_return = et_return ).
+
+  ENDMETHOD.
+
+
+  METHOD call_rfc_inventory_release.
+
+    DATA: lo_dest  TYPE REF TO if_rfc_dest,
+          lo_myobj TYPE REF TO z_s41_rfc_inventory_release,
+          lv_text  TYPE bapiret2-message.
+
+    FREE: es_rfc_head, et_rfc_item, et_rfc_log, et_return.
+
+    CHECK is_head IS NOT INITIAL.
+    CHECK it_item IS NOT INITIAL.
+
+    es_rfc_head = is_head.
+    et_rfc_item = it_item.
+* ----------------------------------------------------------------------
+* Chama RFC
+* ----------------------------------------------------------------------
+    TRY.
+        lo_dest = cl_rfc_destination_provider=>create_by_cloud_destination( i_name = 'S41_RFC_120' ).
+
+        CREATE OBJECT lo_myobj
+          EXPORTING
+            destination = lo_dest.
+
+        " Execução da BAPI via RFC
+        lo_myobj->zfmmm_inventory_release( EXPORTING is_head = CORRESPONDING #( is_head )
+                                                     it_item = CORRESPONDING #( it_item )
+                                                     it_log  = CORRESPONDING #( it_log )
+                                           IMPORTING es_head = DATA(ls_rfc_head)
+                                                     et_item = DATA(lt_rfc_item)
+                                                     et_log  = DATA(lt_rfc_log) ).
+
+* ----------------------------------------------------------------------
+* Ajusta contagem do campo LINE da tabela de LOG
+* ----------------------------------------------------------------------
+        me->ajust_log( EXPORTING iv_documentid = is_head-documentid
+                                 it_rfc_log    = lt_rfc_log
+                       IMPORTING et_log        = et_rfc_log ).
+* ----------------------------------------------------------------------
+* Ajusta campos de controle do header
+* ----------------------------------------------------------------------
+        me->ajust_head( EXPORTING is_rfc_head = ls_rfc_head
+                        CHANGING  cs_head     = es_rfc_head ).
+* ----------------------------------------------------------------------
+* Ajusta campos de controle do item
+* ----------------------------------------------------------------------
+        me->ajust_item( EXPORTING it_rfc_item = lt_rfc_item
+                        CHANGING  ct_item     = et_rfc_item ).
+
+      CATCH  cx_aco_communication_failure INTO DATA(lo_comm).
+        lv_text = lo_comm->get_longtext( ).
+        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
+      CATCH cx_aco_system_failure INTO DATA(lo_sys).
+        lv_text = lo_sys->get_longtext( ).
+        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
+      CATCH cx_aco_application_exception INTO DATA(lo_appl).
+        lv_text = lo_appl->get_longtext( ).
+        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
+      CATCH cx_rfc_dest_provider_error INTO DATA(lo_error).
+        lv_text = lo_error->get_longtext( ).
+        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+  METHOD call_release.
+
+    CHECK gs_operation-release EQ abap_true.
+
+* ---------------------------------------------------------------------
+* Busca dados de cabeçalho e item
+* ---------------------------------------------------------------------
+    me->get_data( EXPORTING it_head_key = CORRESPONDING #( gt_release_h )
+                  IMPORTING et_head     = DATA(lt_head)
+                            et_item     = DATA(lt_item)
+                            et_log      = DATA(lt_log)
+                            et_return   = et_return ).
+
+    CHECK et_return IS INITIAL.
+
+    TRY.
+        DATA(ls_head) = lt_head[ 1 ].
+      CATCH cx_root.
+    ENDTRY.
+
+* ---------------------------------------------------------------------
+* Cria documento de inventário, contagem e log via RFC
+* ---------------------------------------------------------------------
+    me->call_rfc_inventory_release( EXPORTING is_head     = ls_head
+                                              it_item     = lt_item
+                                              it_log      = lt_log
+                                    IMPORTING es_rfc_head = DATA(ls_rfc_head)
+                                              et_rfc_item = DATA(lt_rfc_item)
+                                              et_rfc_log  = DATA(lt_rfc_log)
+                                              et_return   = et_return ).
+
+    IF line_exists( lt_rfc_log[ msgty = 'E' ] ).
+      " Ocorreram erros na execução. Verifique o Log.
+      et_return = VALUE #(  ( type = 'S' id = 'ZMM_INVENTORY' number = '004' ) ).
+    ELSE.
+      " Liberado com suesso.
+      et_return = VALUE #(  ( type = 'S' id = 'ZMM_INVENTORY' number = '005' ) ).
     ENDIF.
 
-    SELECT MAX( DocumentNo )
-        FROM ztmm_inv_draft_h
-        WHERE DocumentNo IS NOT INITIAL
-        INTO @DATA(lv_DocumentNoDraft).
+    me->prepare_commit( EXPORTING iv_update = abap_true
+                                  it_head   = VALUE #( ( CORRESPONDING #( ls_rfc_head ) ) )
+                                  it_item   = lt_rfc_item
+                                  it_log    = lt_rfc_log
+                        IMPORTING et_return = et_return ).
 
-    IF sy-subrc NE 0.
-      lv_DocumentNo = 0.
+  ENDMETHOD.
+
+
+  METHOD update_field.
+
+    DATA: lt_fieldname TYPE ty_t_fieldname.
+
+    IF iv_fieldname IS NOT INITIAL.
+      INSERT iv_fieldname INTO TABLE lt_fieldname.
+    ENDIF.
+    IF it_fieldname IS NOT INITIAL.
+      INSERT LINES OF it_fieldname INTO TABLE lt_fieldname.
     ENDIF.
 
-    lv_DocumentNo = COND #( WHEN lv_DocumentNo >= lv_DocumentNoDraft
-                            THEN lv_DocumentNo
-                            ELSE lv_DocumentNoDraft ).
+    LOOP AT lt_fieldname INTO DATA(lv_fieldname).
 
-* ---------------------------------------------------------------------------
-* Cria nova linha de cabeçalho
-* ---------------------------------------------------------------------------
-    LOOP AT it_entities REFERENCE INTO DATA(ls_entity).
+      lv_fieldname = to_upper( lv_fieldname ).
 
-      DATA(ls_head) = ls_entity->*.
-      ls_head-documentid           = COND #( WHEN ls_head-DocumentId IS NOT INITIAL
-                                             THEN ls_head-DocumentId
-                                             ELSE me->create_guid( IMPORTING et_return = lt_return ) ).
-      ls_head-DocumentNo           = lv_DocumentNo = lv_DocumentNo + 1.
+      " Recupera gerenciador de controle dos campos
+      ASSIGN COMPONENT lv_fieldname OF STRUCTURE is_control TO FIELD-SYMBOL(<fs_control>).
 
-      ls_head-statusid             = gc_status_head-pending.
-      ls_head-statustext           = me->get_head_status_text( EXPORTING iv_statusid = ls_head-statusid ).
-      ls_head-createdby            = sy-uname.
-      ls_head-createdat            = lv_timestamp.
-      ls_head-locallastchangedat   = lv_timestamp.
+      IF sy-subrc NE 0.
+        CONTINUE.
+      ENDIF.
 
-      et_head = VALUE #( BASE et_head ( CORRESPONDING #( ls_head ) ) ).
+      " Verifica se o campo foi atualizado
+      IF <fs_control> NE if_abap_behv=>mk-on.
+        CONTINUE.
+      ENDIF.
 
-      INSERT LINES OF lt_return INTO TABLE et_return.
+      " Recupera novo valor
+      ASSIGN COMPONENT lv_fieldname OF STRUCTURE is_new_data TO FIELD-SYMBOL(<fs_new_field>).
+
+      IF sy-subrc NE 0.
+        CONTINUE.
+      ENDIF.
+
+      " Atualiza campos com novo valor
+      ASSIGN COMPONENT lv_fieldname OF STRUCTURE cs_data TO FIELD-SYMBOL(<fs_field>).
+
+      IF sy-subrc NE 0.
+        CONTINUE.
+      ENDIF.
+
+      <fs_field> = <fs_new_field>.
 
     ENDLOOP.
 
-    SORT et_head BY DocumentId.
-
   ENDMETHOD.
+
 
   METHOD update_head.
 
@@ -837,294 +1104,6 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
       ls_head->LocalLastChangedAt   = lv_timestamp.
 
     ENDLOOP.
-
-  ENDMETHOD.
-
-  METHOD create_item.
-
-    DATA: lt_return    TYPE ty_t_return,
-          lv_timestamp TYPE timestampl.
-
-    GET TIME STAMP FIELD lv_timestamp.
-
-    FREE: et_item.
-
-* ---------------------------------------------------------------------------
-* Recupera status e descrição
-* ---------------------------------------------------------------------------
-    SELECT SINGLE Status, StatusText
-       FROM zi_mm_vh_counting_status
-       WHERE Status = @gc_status_item-pending
-       INTO @DATA(ls_status).
-
-    IF sy-subrc NE 0.
-      CLEAR ls_status.
-    ENDIF.
-
-* ---------------------------------------------------------------------------
-* Cria nova linha de item
-* ---------------------------------------------------------------------------
-    LOOP AT it_entities REFERENCE INTO DATA(ls_entity).
-
-      LOOP AT ls_entity->%target REFERENCE INTO DATA(ls_target).
-
-        DATA(ls_item) = ls_target->*.
-
-* ---------------------------------------------------------------------------
-* Cria registro
-* ---------------------------------------------------------------------------
-        ls_item-documentid           = ls_entity->DocumentId.
-        ls_item-DocumentItemId       = COND #( WHEN ls_target->DocumentItemId IS NOT INITIAL
-                                               THEN ls_target->DocumentItemId
-                                               ELSE me->create_guid( IMPORTING et_return = lt_return ) ).
-        ls_item-statusid             = gc_status_item-pending.
-        ls_item-statustext           = me->get_item_status_text( EXPORTING iv_statusid = ls_item-statusid ).
-        ls_item-createdby            = sy-uname.
-        ls_item-createdat            = lv_timestamp.
-        ls_item-locallastchangedat   = lv_timestamp.
-
-        et_item = VALUE #( BASE et_item ( CORRESPONDING #( ls_item ) ) ).
-
-        INSERT LINES OF lt_return INTO TABLE et_return.
-
-      ENDLOOP.
-
-    ENDLOOP.
-
-    SORT et_item BY DocumentId DocumentItemId.
-
-  ENDMETHOD.
-
-
-  METHOD update_item.
-
-    DATA: lt_fieldname TYPE ty_t_fieldname,
-          lv_timestamp TYPE timestampl.
-
-    GET TIME STAMP FIELD lv_timestamp.
-
-    FREE: et_item.
-
-* ---------------------------------------------------------------------------
-* Recupera dados de item (criada)
-* ---------------------------------------------------------------------------
-    me->get_data( EXPORTING it_item_key = CORRESPONDING #( it_entities )
-                  IMPORTING et_head     = et_head
-                            et_item     = et_item
-                            et_return   = et_return ).
-
-    CHECK et_return IS INITIAL.
-
-* ---------------------------------------------------------------------------
-* Atualiza linha de item
-* ---------------------------------------------------------------------------
-    LOOP AT it_entities REFERENCE INTO DATA(ls_entity).
-
-      " Recupera a linha de cabeçalho
-      READ TABLE et_head REFERENCE INTO DATA(ls_head) WITH KEY DocumentId     = ls_entity->DocumentId
-                                                               BINARY SEARCH.
-      IF sy-subrc NE 0.
-        CONTINUE.
-      ENDIF.
-
-      " Recupera a linha item
-      READ TABLE et_item REFERENCE INTO DATA(ls_item) WITH KEY DocumentId     = ls_entity->DocumentId
-                                                               DocumentItemId = ls_entity->DocumentItemId
-                                                               BINARY SEARCH.
-      IF sy-subrc NE 0.
-        CONTINUE.
-      ENDIF.
-
-      " Atualiza linha de cabeçalho
-      lt_fieldname = VALUE #( ( 'Plant' )
-                              ( 'PlantName' ) ) ##NO_TEXT.
-
-      me->update_field( EXPORTING it_fieldname = lt_fieldname
-                                  is_control   = ls_entity->%control
-                                  is_new_data  = ls_entity->*
-                        CHANGING  cs_data      = ls_head->* ).
-
-      ls_head->LastChangedBy        = sy-uname.
-      ls_head->LastChangedAt        = lv_timestamp.
-      ls_head->LocalLastChangedAt   = lv_timestamp.
-
-      " Atualiza linha de item
-      lt_fieldname = VALUE #( ( 'StatusId' )
-                              ( 'StatusText' )
-                              ( 'Material' )
-                              ( 'MaterialName' )
-                              ( 'Plant' )
-                              ( 'PlantName' )
-                              ( 'StorageLocation' )
-                              ( 'StorageLocationName' )
-                              ( 'Batch' )
-                              ( 'QuantityStock' )
-                              ( 'QuantityCount' )
-                              ( 'QuantityCurrent' )
-                              ( 'Balance' )
-                              ( 'BalanceCurrent' )
-                              ( 'Unit' )
-                              ( 'PriceStock' )
-                              ( 'PriceCount' )
-                              ( 'PriceDiff' )
-                              ( 'Currency' )
-                              ( 'Weight' )
-                              ( 'WeightUnit' )
-                              ( 'ProductHierarchy' )
-                              ( 'Accuracy' )
-                              ( 'MaterialDocumentYear' )
-                              ( 'MaterialDocument' )
-                              ( 'PostingDate' )
-                              ( 'BR_NotaFiscal' )
-                              ( 'AccountingDocument' )
-                              ( 'AccountingDocumentYear' )
-                              ( 'InvoiceReference' )
-                              ( 'DocumentDate' )
-                              ( 'BR_NFeNumber' )
-                              ( 'BR_NFIsCanceled' )
-                              ( 'BR_NFeDocumentStatus' )
-                              ( 'BR_NFeDocumentStatusText' )
-                              ( 'CompanyCode' )
-                              ( 'CompanyCodeName' )
-                              ( 'PhysicalInventoryDocument' )
-                              ( 'FiscalYear' )
-                              ( 'ExternalReference' )
-                              ( 'ProfitCenter' ) ) ##NO_TEXT.
-
-      me->update_field( EXPORTING it_fieldname = lt_fieldname
-                                  is_control   = ls_entity->%control
-                                  is_new_data  = ls_entity->*
-                        CHANGING  cs_data      = ls_item->* ).
-
-      ls_item->LastChangedBy        = sy-uname.
-      ls_item->LastChangedAt        = lv_timestamp.
-      ls_item->LocalLastChangedAt   = lv_timestamp.
-
-    ENDLOOP.
-
-  ENDMETHOD.
-
-  METHOD update_field.
-
-    DATA: lt_fieldname TYPE ty_t_fieldname.
-
-    IF iv_fieldname IS NOT INITIAL.
-      INSERT iv_fieldname INTO TABLE lt_fieldname.
-    ENDIF.
-    IF it_fieldname IS NOT INITIAL.
-      INSERT LINES OF it_fieldname INTO TABLE lt_fieldname.
-    ENDIF.
-
-    LOOP AT lt_fieldname INTO DATA(lv_fieldname).
-
-      lv_fieldname = to_upper( lv_fieldname ).
-
-      " Recupera gerenciador de controle dos campos
-      ASSIGN COMPONENT lv_fieldname OF STRUCTURE is_control TO FIELD-SYMBOL(<fs_control>).
-
-      IF sy-subrc NE 0.
-        CONTINUE.
-      ENDIF.
-
-      " Verifica se o campo foi atualizado
-      IF <fs_control> NE if_abap_behv=>mk-on.
-        CONTINUE.
-      ENDIF.
-
-      " Recupera novo valor
-      ASSIGN COMPONENT lv_fieldname OF STRUCTURE is_new_data TO FIELD-SYMBOL(<fs_new_field>).
-
-      IF sy-subrc NE 0.
-        CONTINUE.
-      ENDIF.
-
-      " Atualiza campos com novo valor
-      ASSIGN COMPONENT lv_fieldname OF STRUCTURE cs_data TO FIELD-SYMBOL(<fs_field>).
-
-      IF sy-subrc NE 0.
-        CONTINUE.
-      ENDIF.
-
-      <fs_field> = <fs_new_field>.
-
-    ENDLOOP.
-
-  ENDMETHOD.
-
-  METHOD prepare_commit.
-
-* ---------------------------------------------------------------------------
-* Atualiza operação
-* ---------------------------------------------------------------------------
-    gs_operation = VALUE #( insert = iv_insert
-                            update = iv_update
-                            delete = iv_delete ).
-
-* ---------------------------------------------------------------------------
-*
-* ---------------------------------------------------------------------------
-    gt_inventory_h = CORRESPONDING #( it_head ).
-    gt_inventory_i = CORRESPONDING #( it_item ).
-    gt_inventory_l = CORRESPONDING #( it_log ).
-
-  ENDMETHOD.
-
-
-  METHOD commit.
-
-    CASE abap_true.
-
-* ---------------------------------------------------------------------------
-* Insere os novos dados
-* ---------------------------------------------------------------------------
-      WHEN gs_operation-insert.
-
-        IF gt_inventory_h[] IS NOT INITIAL.
-          MODIFY ztmm_inventory_h FROM TABLE @gt_inventory_h.
-        ENDIF.
-
-        IF gt_inventory_i[] IS NOT INITIAL.
-          MODIFY ztmm_inventory_i FROM TABLE @gt_inventory_i.
-        ENDIF.
-
-        IF gt_inventory_l[] IS NOT INITIAL.
-          MODIFY ztmm_inventory_l FROM TABLE @gt_inventory_l.
-        ENDIF.
-
-      WHEN gs_operation-update.
-
-        IF gt_inventory_h[] IS NOT INITIAL.
-          MODIFY ztmm_inventory_h FROM TABLE @gt_inventory_h.
-        ENDIF.
-
-        IF gt_inventory_i[] IS NOT INITIAL.
-          MODIFY ztmm_inventory_i FROM TABLE @gt_inventory_i.
-        ENDIF.
-
-        IF gt_inventory_l[] IS NOT INITIAL.
-          MODIFY ztmm_inventory_l FROM TABLE @gt_inventory_l.
-        ENDIF.
-
-      WHEN gs_operation-delete.
-
-        IF gt_inventory_h[] IS NOT INITIAL.
-          DELETE ztmm_inventory_h FROM TABLE @gt_inventory_h.
-        ENDIF.
-
-        IF gt_inventory_i[] IS NOT INITIAL.
-          DELETE ztmm_inventory_i FROM TABLE @gt_inventory_i.
-        ENDIF.
-
-        IF gt_inventory_l[] IS NOT INITIAL.
-          DELETE ztmm_inventory_l FROM TABLE @gt_inventory_l.
-        ENDIF.
-
-    ENDCASE.
-
-* ---------------------------------------------------------------------------
-* Limpa os dados em memória
-* ---------------------------------------------------------------------------
-    me->clean_commit( ).
 
   ENDMETHOD.
 
@@ -1207,245 +1186,153 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD prepare_release.
+  METHOD get_item_status_text.
 
-    gs_operation-release = abap_true.
-    gt_release_h = CORRESPONDING #( it_head_key ).
+    FREE: rv_statustext, ev_statustext, ev_statuscrit.
 
-  ENDMETHOD.
+* ---------------------------------------------------------------------------
+* Recupera descrição do status
+* ---------------------------------------------------------------------------
+    IF gt_status_item[] IS INITIAL.
 
+      SELECT Status, StatusText
+          FROM zi_mm_vh_counting_status
+          INTO TABLE @gt_status_item.
 
-  METHOD call_release.
-
-    CHECK gs_operation-release EQ abap_true.
-
-* ---------------------------------------------------------------------
-* Busca dados de cabeçalho e item
-* ---------------------------------------------------------------------
-    me->get_data( EXPORTING it_head_key = CORRESPONDING #( gt_release_h )
-                  IMPORTING et_head     = DATA(lt_head)
-                            et_item     = DATA(lt_item)
-                            et_log      = DATA(lt_log)
-                            et_return   = et_return ).
-
-    CHECK et_return IS INITIAL.
-
-    TRY.
-        DATA(ls_head) = lt_head[ 1 ].
-      CATCH cx_root.
-    ENDTRY.
-
-* ---------------------------------------------------------------------
-* Cria documento de inventário, contagem e log via RFC
-* ---------------------------------------------------------------------
-    me->call_rfc_inventory_release( EXPORTING is_head     = ls_head
-                                              it_item     = lt_item
-                                              it_log      = lt_log
-                                    IMPORTING es_rfc_head = DATA(ls_rfc_head)
-                                              et_rfc_item = DATA(lt_rfc_item)
-                                              et_rfc_log  = DATA(lt_rfc_log)
-                                              et_return   = et_return ).
-
-    IF line_exists( lt_rfc_log[ msgty = 'E' ] ).
-      " Ocorreram erros na execução. Verifique o Log.
-      et_return = VALUE #(  ( type = 'S' id = 'ZMM_INVENTORY' number = '004' ) ).
-    ELSE.
-      " Liberado com suesso.
-      et_return = VALUE #(  ( type = 'S' id = 'ZMM_INVENTORY' number = '005' ) ).
+      IF sy-subrc NE 0.
+        FREE gt_status_item.
+      ENDIF.
     ENDIF.
 
-    me->prepare_commit( EXPORTING iv_update = abap_true
-                                  it_head   = VALUE #( ( CORRESPONDING #( ls_rfc_head ) ) )
-                                  it_item   = lt_rfc_item
-                                  it_log    = lt_rfc_log
-                        IMPORTING et_return = et_return ).
+* ---------------------------------------------------------------------------
+* Devolve descrição
+* ---------------------------------------------------------------------------
+    READ TABLE gt_status_item REFERENCE INTO DATA(ls_status) WITH KEY Status = iv_statusid.
+
+    IF sy-subrc EQ 0.
+      rv_statustext = ev_statustext = ls_status->StatusText.
+    ENDIF.
+
+    ev_statuscrit   = SWITCH #( iv_statusid
+                                WHEN gc_status_item-pending       THEN gc_color-critical
+                                WHEN gc_status_item-released      THEN gc_color-positive
+                                WHEN gc_status_item-pending_count THEN gc_color-critical
+                                WHEN gc_status_item-complete      THEN gc_color-positive
+                                WHEN gc_status_item-canceled      THEN gc_color-negative
+                                WHEN gc_status_item-removed       THEN gc_color-negative ).
+  ENDMETHOD.
+
+
+  METHOD get_head_status_text.
+
+    FREE: rv_statustext, ev_statustext, ev_statuscrit.
+
+* ---------------------------------------------------------------------------
+* Recupera descrição do status
+* ---------------------------------------------------------------------------
+    IF gt_status_head[] IS INITIAL.
+
+      SELECT Status, StatusText
+          FROM zi_mm_vh_inventory_status
+          INTO TABLE @gt_status_head.
+
+      IF sy-subrc NE 0.
+        FREE gt_status_head.
+      ENDIF.
+    ENDIF.
+
+* ---------------------------------------------------------------------------
+* Devolve descrição
+* ---------------------------------------------------------------------------
+    READ TABLE gt_status_head REFERENCE INTO DATA(ls_status) WITH KEY Status = iv_statusid.
+
+    IF sy-subrc EQ 0.
+      rv_statustext = ev_statustext = ls_status->StatusText.
+    ENDIF.
+
+    ev_statuscrit   = SWITCH #( iv_statusid
+                                WHEN gc_status_head-pending  THEN gc_color-critical
+                                WHEN gc_status_head-released THEN gc_color-positive
+                                WHEN gc_status_head-complete THEN gc_color-positive
+                                WHEN gc_status_head-canceled THEN gc_color-negative ).
+  ENDMETHOD.
+
+
+  METHOD ajust_head.
+
+    IF is_rfc_head-statusid NE cs_head-StatusId.
+      cs_head-StatusId      = is_rfc_head-StatusId.
+      cs_head-LastChangedBy = sy-uname.
+      GET TIME STAMP FIELD cs_head-LastChangedAt.
+      GET TIME STAMP FIELD cs_head-LocalLastChangedAt.
+    ENDIF.
 
   ENDMETHOD.
 
 
+  METHOD ajust_item.
 
+    IF ct_item IS NOT INITIAL.
+      SORT ct_item BY documentid DocumentItemId.
+    ENDIF.
 
-  METHOD call_rfc_inventory_release.
+    LOOP AT it_rfc_item ASSIGNING FIELD-SYMBOL(<fs_rfc_item>).
 
-    DATA: lo_dest  TYPE REF TO if_rfc_dest,
-          lo_myobj TYPE REF TO z_s41_rfc_inventory_release,
-          lv_text  TYPE bapiret2-message.
+      READ TABLE ct_item ASSIGNING FIELD-SYMBOL(<fs_item>) WITH KEY documentid = <fs_rfc_item>-documentid
+                                                                    DocumentItemId  = <fs_rfc_item>-DocumentItemId
+                                                                    BINARY SEARCH.
+      IF sy-subrc NE 0.
+        CONTINUE.
+      ENDIF.
 
-    FREE: es_rfc_head, et_rfc_item, et_rfc_log, et_return.
+      IF <fs_rfc_item>-physicalinventorydocument EQ <fs_item>-PhysicalInventoryDocument.
+        CONTINUE.
+      ENDIF.
 
-    CHECK is_head IS NOT INITIAL.
-    CHECK it_item IS NOT INITIAL.
+      <fs_item> = CORRESPONDING #( <fs_rfc_item> ).
 
-    es_rfc_head = is_head.
-    et_rfc_item = it_item.
-* ----------------------------------------------------------------------
-* Chama RFC
-* ----------------------------------------------------------------------
-    TRY.
-        lo_dest = cl_rfc_destination_provider=>create_by_cloud_destination( i_name = 'S41_RFC_120' ).
-
-        CREATE OBJECT lo_myobj
-          EXPORTING
-            destination = lo_dest.
-
-        " Execução da BAPI via RFC
-        lo_myobj->zfmmm_inventory_release( EXPORTING is_head = CORRESPONDING #( is_head )
-                                                     it_item = CORRESPONDING #( it_item )
-                                                     it_log  = CORRESPONDING #( it_log )
-                                           IMPORTING es_head = DATA(ls_rfc_head)
-                                                     et_item = DATA(lt_rfc_item)
-                                                     et_log  = DATA(lt_rfc_log) ).
-
-* ----------------------------------------------------------------------
-* Ajusta contagem do campo LINE da tabela de LOG
-* ----------------------------------------------------------------------
-        me->ajust_log( EXPORTING iv_documentid = is_head-documentid
-                                 it_rfc_log    = lt_rfc_log
-                       IMPORTING et_log        = et_rfc_log ).
-* ----------------------------------------------------------------------
-* Ajusta campos de controle do header
-* ----------------------------------------------------------------------
-        me->ajust_head( EXPORTING is_rfc_head = ls_rfc_head
-                        CHANGING  cs_head     = es_rfc_head ).
-* ----------------------------------------------------------------------
-* Ajusta campos de controle do item
-* ----------------------------------------------------------------------
-        me->ajust_item( EXPORTING it_rfc_item = lt_rfc_item
-                        CHANGING  ct_item     = et_rfc_item ).
-
-      CATCH  cx_aco_communication_failure INTO DATA(lo_comm).
-        lv_text = lo_comm->get_longtext( ).
-        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
-      CATCH cx_aco_system_failure INTO DATA(lo_sys).
-        lv_text = lo_sys->get_longtext( ).
-        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
-      CATCH cx_aco_application_exception INTO DATA(lo_appl).
-        lv_text = lo_appl->get_longtext( ).
-        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
-      CATCH cx_rfc_dest_provider_error INTO DATA(lo_error).
-        lv_text = lo_error->get_longtext( ).
-        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
-    ENDTRY.
-
-  ENDMETHOD.
-
-
-  METHOD cancel_inventory.
-
-* ---------------------------------------------------------------------------
-* Recupera dados de cabeçalho
-* ---------------------------------------------------------------------------
-    me->get_data( EXPORTING it_head_key = it_head_key
-                  IMPORTING et_head     = DATA(lt_head)
-                            et_return   = et_return ).
-
-    CHECK et_return IS INITIAL.
-
-* ---------------------------------------------------------------------------
-* Atualiza novo status
-* ---------------------------------------------------------------------------
-    LOOP AT lt_head REFERENCE INTO DATA(ls_head).
-      ls_head->StatusId   = gc_status_head-canceled.
-      ls_head->StatusText = me->get_item_status_text( EXPORTING iv_statusid = ls_head->StatusId ).
+      <fs_item>-LastChangedBy = sy-uname.
+      GET TIME STAMP FIELD <fs_item>-LastChangedAt.
+      GET TIME STAMP FIELD <fs_item>-LocalLastChangedAt.
     ENDLOOP.
 
-* ---------------------------------------------------------------------------
-* Prepara os dados para serem inseridos posteriormente no método COMMIT
-* ---------------------------------------------------------------------------
-    me->prepare_commit( EXPORTING iv_update = abap_true
-                                  it_head   = lt_head
-                        IMPORTING et_return = et_return ).
-
   ENDMETHOD.
 
 
-  METHOD ajust_log.
+  METHOD build_overview.
 
-    FREE: et_log.
-* ---------------------------------------------------------------------------
-* Recupera última mensagem criada
-* ---------------------------------------------------------------------------
-    SELECT MAX( line )
-        FROM ztmm_inventory_l
-        WHERE documentid = @iv_documentid
-        INTO @DATA(lv_seqnr).
+    FREE: et_overview.
 
-    IF sy-subrc NE 0.
-      lv_seqnr = 1.
-    ENDIF.
-* ---------------------------------------------------------------------------
-* Prepara mensagens
-* ---------------------------------------------------------------------------
-    et_log = CORRESPONDING #( it_rfc_log ).
+    et_overview = CORRESPONDING #( it_report_item ).
 
-    LOOP AT et_log ASSIGNING FIELD-SYMBOL(<fs_log>).
-      <fs_log>-line          = sy-tabix + lv_seqnr.
-      <fs_log>-CreatedBy     = sy-uname.
-      <fs_log>-LastChangedBy = sy-uname.
-      GET TIME STAMP FIELD <fs_log>-CreatedAt.
-      GET TIME STAMP FIELD <fs_log>-LastChangedAt.
-      GET TIME STAMP FIELD <fs_log>-LocalLastChangedAt.
+    LOOP AT et_overview REFERENCE INTO DATA(ls_overview).
+
+      READ TABLE it_head REFERENCE INTO DATA(ls_head) WITH KEY DocumentId = ls_overview->DocumentId.
+
+      CHECK sy-subrc EQ 0.
+
+      ls_overview->DocumentNo          = ls_head->DocumentNo.
+      ls_overview->CountId             = ls_head->CountId.
+      ls_overview->CountDate           = ls_head->CountDate.
+      ls_overview->StatusInventoryId   = ls_head->StatusId.
+      ls_overview->StatusInventoryText = ls_head->StatusText.
+      ls_overview->StatusInventoryCrit = ls_head->StatusCrit.
+      ls_overview->Plant               = ls_head->Plant.
+      ls_overview->PlantName           = ls_head->PlantName.
+      ls_overview->Description         = ls_head->Description.
 
     ENDLOOP.
 
   ENDMETHOD.
 
 
-  METHOD call_rfc_inventory_get_info.
+  METHOD clean_commit.
 
-    DATA: lo_dest  TYPE REF TO if_rfc_dest,
-          lo_myobj TYPE REF TO z_s41_rfc_inventory_get_info,
-          lt_head  TYPE ty_t_head,
-          lt_item  TYPE ty_t_item,
-          lv_text  TYPE bapiret2-message.
-
-    FREE: et_material_stock, et_material_price, et_phys_inv_info, et_return.
-
-    CHECK it_rfc_head IS NOT INITIAL.
-    CHECK it_rfc_item IS NOT INITIAL.
-
-* ----------------------------------------------------------------------
-* Chama RFC
-* ----------------------------------------------------------------------
-    TRY.
-        lo_dest = cl_rfc_destination_provider=>create_by_cloud_destination( i_name = 'S41_RFC_120' ).
-
-        CREATE OBJECT lo_myobj
-          EXPORTING
-            destination = lo_dest.
-
-        " Execução da BAPI via RFC
-        lo_myobj->zfmmm_inventory_get_info(
-           EXPORTING
-             it_head           = it_rfc_head
-             it_item           = it_rfc_item
-           IMPORTING
-             et_material_stock = et_material_stock
-             et_material_price = et_material_price
-             et_phys_inv_info  = et_phys_inv_info
-         ).
-
-      CATCH  cx_aco_communication_failure INTO DATA(lo_comm).
-        lv_text = lo_comm->get_longtext( ).
-        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
-      CATCH cx_aco_system_failure INTO DATA(lo_sys).
-        lv_text = lo_sys->get_longtext( ).
-        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
-      CATCH cx_aco_application_exception INTO DATA(lo_appl).
-        lv_text = lo_appl->get_longtext( ).
-        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
-      CATCH cx_rfc_dest_provider_error INTO DATA(lo_error).
-        lv_text = lo_error->get_longtext( ).
-        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_REMOTE_SYSTEM' number = '000' message_v1 = lv_text+0(50) message_v2 = lv_text+50(50) message_v3 = lv_text+100(50) message_v4 = lv_text+150(50) ) ).
-    ENDTRY.
-
-    SORT et_material_stock BY enddate material plant storagelocation batch materialbaseunit.
-    SORT et_material_price BY valuationarea Material baseunit currency.
-    SORT et_phys_inv_info BY fiscalyear physicalinventorydocument.
-
-    gt_material_stock = et_material_stock.
-    gt_material_price = et_material_price.
-    gt_phys_inv_info  = et_phys_inv_info.
+    FREE: gs_operation,
+          gt_inventory_h,
+          gt_inventory_i,
+          gt_inventory_l,
+          gt_release_h.
 
   ENDMETHOD.
 
@@ -1647,150 +1534,271 @@ CLASS zclmm_bd_inventory IMPLEMENTATION.
 
   ENDMETHOD.
 
-  METHOD ajust_head.
 
-    IF is_rfc_head-statusid NE cs_head-StatusId.
-      cs_head-StatusId      = is_rfc_head-StatusId.
-      cs_head-LastChangedBy = sy-uname.
-      GET TIME STAMP FIELD cs_head-LastChangedAt.
-      GET TIME STAMP FIELD cs_head-LocalLastChangedAt.
-    ENDIF.
+  METHOD commit.
+
+    CASE abap_true.
+
+* ---------------------------------------------------------------------------
+* Insere os novos dados
+* ---------------------------------------------------------------------------
+      WHEN gs_operation-insert.
+
+        IF gt_inventory_h[] IS NOT INITIAL.
+          MODIFY ztmm_inventory_h FROM TABLE @gt_inventory_h.
+        ENDIF.
+
+        IF gt_inventory_i[] IS NOT INITIAL.
+          MODIFY ztmm_inventory_i FROM TABLE @gt_inventory_i.
+        ENDIF.
+
+        IF gt_inventory_l[] IS NOT INITIAL.
+          MODIFY ztmm_inventory_l FROM TABLE @gt_inventory_l.
+        ENDIF.
+
+      WHEN gs_operation-update.
+
+        IF gt_inventory_h[] IS NOT INITIAL.
+          MODIFY ztmm_inventory_h FROM TABLE @gt_inventory_h.
+        ENDIF.
+
+        IF gt_inventory_i[] IS NOT INITIAL.
+          MODIFY ztmm_inventory_i FROM TABLE @gt_inventory_i.
+        ENDIF.
+
+        IF gt_inventory_l[] IS NOT INITIAL.
+          MODIFY ztmm_inventory_l FROM TABLE @gt_inventory_l.
+        ENDIF.
+
+      WHEN gs_operation-delete.
+
+        IF gt_inventory_h[] IS NOT INITIAL.
+          DELETE ztmm_inventory_h FROM TABLE @gt_inventory_h.
+        ENDIF.
+
+        IF gt_inventory_i[] IS NOT INITIAL.
+          DELETE ztmm_inventory_i FROM TABLE @gt_inventory_i.
+        ENDIF.
+
+        IF gt_inventory_l[] IS NOT INITIAL.
+          DELETE ztmm_inventory_l FROM TABLE @gt_inventory_l.
+        ENDIF.
+
+    ENDCASE.
+
+* ---------------------------------------------------------------------------
+* Limpa os dados em memória
+* ---------------------------------------------------------------------------
+    me->clean_commit( ).
 
   ENDMETHOD.
 
-  METHOD ajust_item.
 
-    IF ct_item IS NOT INITIAL.
-      SORT ct_item BY documentid DocumentItemId.
+  METHOD create_guid.
+
+    FREE: rv_guid, et_return.
+
+* ---------------------------------------------------------------------------
+* Cria novo GUID
+* ---------------------------------------------------------------------------
+    TRY.
+        rv_guid = cl_system_uuid=>create_uuid_x16_static( ).
+      CATCH cx_uuid_error.
+        " Falha ao criar GUID.
+        et_return = VALUE #( BASE et_return ( type = 'E' id = 'ZMM_INVENTORY' number = '001' ) ).
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+  METHOD create_item.
+
+    DATA: lt_return    TYPE ty_t_return,
+          lv_timestamp TYPE timestampl.
+
+    GET TIME STAMP FIELD lv_timestamp.
+
+    FREE: et_item.
+
+* ---------------------------------------------------------------------------
+* Recupera status e descrição
+* ---------------------------------------------------------------------------
+    SELECT SINGLE Status, StatusText
+       FROM zi_mm_vh_counting_status
+       WHERE Status = @gc_status_item-pending
+       INTO @DATA(ls_status).
+
+    IF sy-subrc NE 0.
+      CLEAR ls_status.
     ENDIF.
 
-    LOOP AT it_rfc_item ASSIGNING FIELD-SYMBOL(<fs_rfc_item>).
+* ---------------------------------------------------------------------------
+* Cria nova linha de item
+* ---------------------------------------------------------------------------
+    LOOP AT it_entities REFERENCE INTO DATA(ls_entity).
 
-      READ TABLE ct_item ASSIGNING FIELD-SYMBOL(<fs_item>) WITH KEY documentid = <fs_rfc_item>-documentid
-                                                                    DocumentItemId  = <fs_rfc_item>-DocumentItemId
-                                                                    BINARY SEARCH.
+      LOOP AT ls_entity->%target REFERENCE INTO DATA(ls_target).
+
+        DATA(ls_item) = ls_target->*.
+
+* ---------------------------------------------------------------------------
+* Cria registro
+* ---------------------------------------------------------------------------
+        ls_item-documentid           = ls_entity->DocumentId.
+        ls_item-DocumentItemId       = COND #( WHEN ls_target->DocumentItemId IS NOT INITIAL
+                                               THEN ls_target->DocumentItemId
+                                               ELSE me->create_guid( IMPORTING et_return = lt_return ) ).
+        ls_item-statusid             = gc_status_item-pending.
+        ls_item-statustext           = me->get_item_status_text( EXPORTING iv_statusid = ls_item-statusid ).
+        ls_item-createdby            = sy-uname.
+        ls_item-createdat            = lv_timestamp.
+        ls_item-locallastchangedat   = lv_timestamp.
+
+        et_item = VALUE #( BASE et_item ( CORRESPONDING #( ls_item ) ) ).
+
+        INSERT LINES OF lt_return INTO TABLE et_return.
+
+      ENDLOOP.
+
+    ENDLOOP.
+
+    SORT et_item BY DocumentId DocumentItemId.
+
+  ENDMETHOD.
+
+
+  METHOD prepare_commit.
+
+* ---------------------------------------------------------------------------
+* Atualiza operação
+* ---------------------------------------------------------------------------
+    gs_operation = VALUE #( insert = iv_insert
+                            update = iv_update
+                            delete = iv_delete ).
+
+* ---------------------------------------------------------------------------
+*
+* ---------------------------------------------------------------------------
+    gt_inventory_h = CORRESPONDING #( it_head ).
+    gt_inventory_i = CORRESPONDING #( it_item ).
+    gt_inventory_l = CORRESPONDING #( it_log ).
+
+  ENDMETHOD.
+
+
+  METHOD prepare_release.
+
+    gs_operation-release = abap_true.
+    gt_release_h = CORRESPONDING #( it_head_key ).
+
+  ENDMETHOD.
+
+
+  METHOD update_item.
+
+    DATA: lt_fieldname TYPE ty_t_fieldname,
+          lv_timestamp TYPE timestampl.
+
+    GET TIME STAMP FIELD lv_timestamp.
+
+    FREE: et_item.
+
+* ---------------------------------------------------------------------------
+* Recupera dados de item (criada)
+* ---------------------------------------------------------------------------
+    me->get_data( EXPORTING it_item_key = CORRESPONDING #( it_entities )
+                  IMPORTING et_head     = et_head
+                            et_item     = et_item
+                            et_return   = et_return ).
+
+    CHECK et_return IS INITIAL.
+
+* ---------------------------------------------------------------------------
+* Atualiza linha de item
+* ---------------------------------------------------------------------------
+    LOOP AT it_entities REFERENCE INTO DATA(ls_entity).
+
+      " Recupera a linha de cabeçalho
+      READ TABLE et_head REFERENCE INTO DATA(ls_head) WITH KEY DocumentId     = ls_entity->DocumentId
+                                                               BINARY SEARCH.
       IF sy-subrc NE 0.
         CONTINUE.
       ENDIF.
 
-      IF <fs_rfc_item>-physicalinventorydocument EQ <fs_item>-PhysicalInventoryDocument.
+      " Recupera a linha item
+      READ TABLE et_item REFERENCE INTO DATA(ls_item) WITH KEY DocumentId     = ls_entity->DocumentId
+                                                               DocumentItemId = ls_entity->DocumentItemId
+                                                               BINARY SEARCH.
+      IF sy-subrc NE 0.
         CONTINUE.
       ENDIF.
 
-      <fs_item> = CORRESPONDING #( <fs_rfc_item> ).
+      " Atualiza linha de cabeçalho
+      lt_fieldname = VALUE #( ( 'Plant' )
+                              ( 'PlantName' ) ) ##NO_TEXT.
 
-      <fs_item>-LastChangedBy = sy-uname.
-      GET TIME STAMP FIELD <fs_item>-LastChangedAt.
-      GET TIME STAMP FIELD <fs_item>-LocalLastChangedAt.
+      me->update_field( EXPORTING it_fieldname = lt_fieldname
+                                  is_control   = ls_entity->%control
+                                  is_new_data  = ls_entity->*
+                        CHANGING  cs_data      = ls_head->* ).
+
+      ls_head->LastChangedBy        = sy-uname.
+      ls_head->LastChangedAt        = lv_timestamp.
+      ls_head->LocalLastChangedAt   = lv_timestamp.
+
+      " Atualiza linha de item
+      lt_fieldname = VALUE #( ( 'StatusId' )
+                              ( 'StatusText' )
+                              ( 'Material' )
+                              ( 'MaterialName' )
+                              ( 'Plant' )
+                              ( 'PlantName' )
+                              ( 'StorageLocation' )
+                              ( 'StorageLocationName' )
+                              ( 'Batch' )
+                              ( 'QuantityStock' )
+                              ( 'QuantityCount' )
+                              ( 'QuantityCurrent' )
+                              ( 'Balance' )
+                              ( 'BalanceCurrent' )
+                              ( 'Unit' )
+                              ( 'PriceStock' )
+                              ( 'PriceCount' )
+                              ( 'PriceDiff' )
+                              ( 'Currency' )
+                              ( 'Weight' )
+                              ( 'WeightUnit' )
+                              ( 'ProductHierarchy' )
+                              ( 'Accuracy' )
+                              ( 'MaterialDocumentYear' )
+                              ( 'MaterialDocument' )
+                              ( 'PostingDate' )
+                              ( 'BR_NotaFiscal' )
+                              ( 'AccountingDocument' )
+                              ( 'AccountingDocumentYear' )
+                              ( 'InvoiceReference' )
+                              ( 'DocumentDate' )
+                              ( 'BR_NFeNumber' )
+                              ( 'BR_NFIsCanceled' )
+                              ( 'BR_NFeDocumentStatus' )
+                              ( 'BR_NFeDocumentStatusText' )
+                              ( 'CompanyCode' )
+                              ( 'CompanyCodeName' )
+                              ( 'PhysicalInventoryDocument' )
+                              ( 'FiscalYear' )
+                              ( 'ExternalReference' )
+                              ( 'ProfitCenter' ) ) ##NO_TEXT.
+
+      me->update_field( EXPORTING it_fieldname = lt_fieldname
+                                  is_control   = ls_entity->%control
+                                  is_new_data  = ls_entity->*
+                        CHANGING  cs_data      = ls_item->* ).
+
+      ls_item->LastChangedBy        = sy-uname.
+      ls_item->LastChangedAt        = lv_timestamp.
+      ls_item->LocalLastChangedAt   = lv_timestamp.
+
     ENDLOOP.
 
   ENDMETHOD.
-
-
-  METHOD build_overview.
-
-    FREE: et_overview.
-
-    et_overview = CORRESPONDING #( it_report_item ).
-
-    LOOP AT et_overview REFERENCE INTO DATA(ls_overview).
-
-      READ TABLE it_head REFERENCE INTO DATA(ls_head) WITH KEY DocumentId = ls_overview->DocumentId.
-
-      CHECK sy-subrc EQ 0.
-
-      ls_overview->DocumentNo          = ls_head->DocumentNo.
-      ls_overview->CountId             = ls_head->CountId.
-      ls_overview->CountDate           = ls_head->CountDate.
-      ls_overview->StatusInventoryId   = ls_head->StatusId.
-      ls_overview->StatusInventoryText = ls_head->StatusText.
-      ls_overview->StatusInventoryCrit = ls_head->StatusCrit.
-      ls_overview->Plant               = ls_head->Plant.
-      ls_overview->PlantName           = ls_head->PlantName.
-      ls_overview->Description         = ls_head->Description.
-
-    ENDLOOP.
-
-  ENDMETHOD.
-
-  METHOD get_head_status_text.
-
-    FREE: rv_statustext, ev_statustext, ev_statuscrit.
-
-* ---------------------------------------------------------------------------
-* Recupera descrição do status
-* ---------------------------------------------------------------------------
-    IF gt_status_head[] IS INITIAL.
-
-      SELECT Status, StatusText
-          FROM zi_mm_vh_inventory_status
-          INTO TABLE @gt_status_head.
-
-      IF sy-subrc NE 0.
-        FREE gt_status_head.
-      ENDIF.
-    ENDIF.
-
-* ---------------------------------------------------------------------------
-* Devolve descrição
-* ---------------------------------------------------------------------------
-    READ TABLE gt_status_head REFERENCE INTO DATA(ls_status) WITH KEY Status = iv_statusid.
-
-    IF sy-subrc EQ 0.
-      rv_statustext = ev_statustext = ls_status->StatusText.
-    ENDIF.
-
-    ev_statuscrit   = SWITCH #( iv_statusid
-                                WHEN gc_status_head-pending  THEN gc_color-critical
-                                WHEN gc_status_head-released THEN gc_color-positive
-                                WHEN gc_status_head-complete THEN gc_color-positive
-                                WHEN gc_status_head-canceled THEN gc_color-negative ).
-  ENDMETHOD.
-
-  METHOD get_item_status_text.
-
-    FREE: rv_statustext, ev_statustext, ev_statuscrit.
-
-* ---------------------------------------------------------------------------
-* Recupera descrição do status
-* ---------------------------------------------------------------------------
-    IF gt_status_item[] IS INITIAL.
-
-      SELECT Status, StatusText
-          FROM zi_mm_vh_counting_status
-          INTO TABLE @gt_status_item.
-
-      IF sy-subrc NE 0.
-        FREE gt_status_item.
-      ENDIF.
-    ENDIF.
-
-* ---------------------------------------------------------------------------
-* Devolve descrição
-* ---------------------------------------------------------------------------
-    READ TABLE gt_status_item REFERENCE INTO DATA(ls_status) WITH KEY Status = iv_statusid.
-
-    IF sy-subrc EQ 0.
-      rv_statustext = ev_statustext = ls_status->StatusText.
-    ENDIF.
-
-    ev_statuscrit   = SWITCH #( iv_statusid
-                                WHEN gc_status_item-pending       THEN gc_color-critical
-                                WHEN gc_status_item-released      THEN gc_color-positive
-                                WHEN gc_status_item-pending_count THEN gc_color-critical
-                                WHEN gc_status_item-complete      THEN gc_color-positive
-                                WHEN gc_status_item-canceled      THEN gc_color-negative
-                                WHEN gc_status_item-removed       THEN gc_color-negative ).
-  ENDMETHOD.
-
-  METHOD clean_commit.
-
-    FREE: gs_operation,
-          gt_inventory_h,
-          gt_inventory_i,
-          gt_inventory_l,
-          gt_release_h.
-
-  ENDMETHOD.
-
 ENDCLASS.

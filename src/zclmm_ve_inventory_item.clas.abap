@@ -13,7 +13,7 @@ ENDCLASS.
 
 
 
-CLASS zclmm_ve_inventory_item IMPLEMENTATION.
+CLASS ZCLMM_VE_INVENTORY_ITEM IMPLEMENTATION.
 
 
   METHOD if_sadl_exit_calc_element_read~calculate.
@@ -79,5 +79,4 @@ CLASS zclmm_ve_inventory_item IMPLEMENTATION.
                                             ( CONV #( 'FISCALYEAR' ) ) ).
 
   ENDMETHOD.
-
 ENDCLASS.

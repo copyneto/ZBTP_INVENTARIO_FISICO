@@ -461,7 +461,9 @@ CLASS zclmm_s41_cds_inventario DEFINITION
 ENDCLASS.
 
 
-CLASS zclmm_s41_cds_inventario IMPLEMENTATION.
+
+CLASS ZCLMM_S41_CDS_INVENTARIO IMPLEMENTATION.
+
 
   METHOD /iwbep/if_v4_mp_basic_pm~define.
 
@@ -1489,6 +1491,4 @@ CLASS zclmm_s41_cds_inventario IMPLEMENTATION.
     lo_primitive_property->set_is_nullable( ).
 
   ENDMETHOD.
-
-
 ENDCLASS.

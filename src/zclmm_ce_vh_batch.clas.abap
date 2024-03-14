@@ -26,7 +26,8 @@ ENDCLASS.
 
 
 
-CLASS zclmm_ce_vh_batch IMPLEMENTATION.
+CLASS ZCLMM_CE_VH_BATCH IMPLEMENTATION.
+
 
   METHOD if_rap_query_provider~select.
 
@@ -127,6 +128,7 @@ CLASS zclmm_ce_vh_batch IMPLEMENTATION.
 
   ENDMETHOD.
 
+
   METHOD filter_search_expression.
 
     CHECK iv_search_expression IS NOT INITIAL.
@@ -150,6 +152,7 @@ CLASS zclmm_ce_vh_batch IMPLEMENTATION.
 
   ENDMETHOD.
 
+
   METHOD apply_sort.
 
     DATA: lt_data  TYPE SORTED TABLE OF ty_cds WITH NON-UNIQUE KEY plant material batch.
@@ -168,5 +171,4 @@ CLASS zclmm_ce_vh_batch IMPLEMENTATION.
              INTO CORRESPONDING FIELDS OF TABLE @ct_data.
 
   ENDMETHOD.
-
 ENDCLASS.

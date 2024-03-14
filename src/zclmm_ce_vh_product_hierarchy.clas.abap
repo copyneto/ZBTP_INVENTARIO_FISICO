@@ -26,7 +26,8 @@ ENDCLASS.
 
 
 
-CLASS zclmm_ce_vh_product_hierarchy IMPLEMENTATION.
+CLASS ZCLMM_CE_VH_PRODUCT_HIERARCHY IMPLEMENTATION.
+
 
   METHOD if_rap_query_provider~select.
 
@@ -155,6 +156,7 @@ CLASS zclmm_ce_vh_product_hierarchy IMPLEMENTATION.
 
   ENDMETHOD.
 
+
   METHOD apply_sort.
 
     DATA: lt_data TYPE SORTED TABLE OF ty_cds WITH NON-UNIQUE KEY producthierarchy.
@@ -173,5 +175,4 @@ CLASS zclmm_ce_vh_product_hierarchy IMPLEMENTATION.
              INTO CORRESPONDING FIELDS OF TABLE @ct_data.
 
   ENDMETHOD.
-
 ENDCLASS.

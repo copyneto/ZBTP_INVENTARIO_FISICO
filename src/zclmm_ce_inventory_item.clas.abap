@@ -84,11 +84,7 @@ ENDCLASS.
 
 
 
-CLASS zclmm_ce_inventory_item IMPLEMENTATION.
-
-
-  METHOD if_oo_adt_classrun~main.
-  ENDMETHOD.
+CLASS ZCLMM_CE_INVENTORY_ITEM IMPLEMENTATION.
 
 
   METHOD if_rap_query_provider~select.
@@ -176,6 +172,73 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
     ENDIF.
 
   ENDMETHOD.
+
+
+  METHOD get_info.
+
+    FREE: et_head, et_item.
+
+* ----------------------------------------------------------------------
+* Recupera os dados de Item
+* ----------------------------------------------------------------------
+    SELECT * FROM zi_mm_ce_inventory_item
+        WHERE DocumentId                 IN @is_filter-DocumentId
+          AND DocumentItemId             IN @is_filter-DocumentItemId
+          AND StatusId                   IN @is_filter-StatusId
+          AND StatusText                 IN @is_filter-StatusText
+          AND Material                   IN @is_filter-Material
+          AND MaterialName               IN @is_filter-MaterialName
+          AND StorageLocation            IN @is_filter-StorageLocation
+          AND StorageLocationName        IN @is_filter-StorageLocationName
+          AND Batch                      IN @is_filter-Batch
+*          AND QuantityStock              IN @is_filter-QuantityStock
+          AND QuantityCount              IN @is_filter-QuantityCount
+*          AND QuantityCurrent            IN @is_filter-QuantityCurrent
+*          AND Balance                    IN @is_filter-Balance
+*          AND BalanceCurrent             IN @is_filter-BalanceCurrent
+          AND Unit                       IN @is_filter-Unit
+*          AND PriceStock                 IN @is_filter-PriceStock
+*          AND PriceCount                 IN @is_filter-PriceCount
+*          AND PriceDiff                  IN @is_filter-PriceDiff
+*          AND Currency                   IN @is_filter-Currency
+*          AND Weight                     IN @is_filter-Weight
+*          AND WeightUnit                 IN @is_filter-WeightUnit
+*          AND Accuracy                   IN @is_filter-Accuracy
+*          AND CompanyCode                IN @is_filter-CompanyCode
+*          AND CompanyCodeName            IN @is_filter-CompanyCodeName
+          AND PhysicalInventoryDocument  IN @is_filter-PhysicalInventoryDocument
+          AND FiscalYear                 IN @is_filter-FiscalYear
+*         ORDER BY DocumentId, DocumentItemId
+         INTO CORRESPONDING FIELDS OF TABLE @et_item.
+*         UP TO @iv_set_top ROWS
+*         OFFSET @iv_set_skip.
+
+    IF sy-subrc EQ 0 .
+      SORT et_item BY DocumentId DocumentItemId.
+    ENDIF.
+
+    " Monta tabela de chaves
+    DATA(lt_item_key) = et_item.
+    SORT lt_item_key BY DocumentId.
+    DELETE ADJACENT DUPLICATES FROM lt_item_key COMPARING DocumentId.
+
+* ----------------------------------------------------------------------
+* Recupera os dados de Cabeçalho
+* ----------------------------------------------------------------------
+    IF lt_item_key[] IS NOT INITIAL.
+
+      SELECT * FROM zi_mm_ce_inventory_head
+          FOR ALL ENTRIES IN @lt_item_key
+          WHERE DocumentId   EQ @lt_item_key-DocumentId
+          INTO TABLE @et_head.
+
+      IF sy-subrc EQ 0 .
+        SORT et_head BY DocumentId.
+      ENDIF.
+    ENDIF.
+
+  ENDMETHOD.
+
 
   METHOD apply_aggregation.
 
@@ -551,69 +614,6 @@ CLASS zclmm_ce_inventory_item IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD get_info.
-
-    FREE: et_head, et_item.
-
-* ----------------------------------------------------------------------
-* Recupera os dados de Item
-* ----------------------------------------------------------------------
-    SELECT * FROM zi_mm_ce_inventory_item
-        WHERE DocumentId                 IN @is_filter-DocumentId
-          AND DocumentItemId             IN @is_filter-DocumentItemId
-          AND StatusId                   IN @is_filter-StatusId
-          AND StatusText                 IN @is_filter-StatusText
-          AND Material                   IN @is_filter-Material
-          AND MaterialName               IN @is_filter-MaterialName
-          AND StorageLocation            IN @is_filter-StorageLocation
-          AND StorageLocationName        IN @is_filter-StorageLocationName
-          AND Batch                      IN @is_filter-Batch
-*          AND QuantityStock              IN @is_filter-QuantityStock
-          AND QuantityCount              IN @is_filter-QuantityCount
-*          AND QuantityCurrent            IN @is_filter-QuantityCurrent
-*          AND Balance                    IN @is_filter-Balance
-*          AND BalanceCurrent             IN @is_filter-BalanceCurrent
-          AND Unit                       IN @is_filter-Unit
-*          AND PriceStock                 IN @is_filter-PriceStock
-*          AND PriceCount                 IN @is_filter-PriceCount
-*          AND PriceDiff                  IN @is_filter-PriceDiff
-*          AND Currency                   IN @is_filter-Currency
-*          AND Weight                     IN @is_filter-Weight
-*          AND WeightUnit                 IN @is_filter-WeightUnit
-*          AND Accuracy                   IN @is_filter-Accuracy
-*          AND CompanyCode                IN @is_filter-CompanyCode
-*          AND CompanyCodeName            IN @is_filter-CompanyCodeName
-          AND PhysicalInventoryDocument  IN @is_filter-PhysicalInventoryDocument
-          AND FiscalYear                 IN @is_filter-FiscalYear
-*         ORDER BY DocumentId, DocumentItemId
-         INTO CORRESPONDING FIELDS OF TABLE @et_item.
-*         UP TO @iv_set_top ROWS
-*         OFFSET @iv_set_skip.
-
-    IF sy-subrc EQ 0 .
-      SORT et_item BY DocumentId DocumentItemId.
-    ENDIF.
-
-    " Monta tabela de chaves
-    DATA(lt_item_key) = et_item.
-    SORT lt_item_key BY DocumentId.
-    DELETE ADJACENT DUPLICATES FROM lt_item_key COMPARING DocumentId.
-
-* ----------------------------------------------------------------------
-* Recupera os dados de Cabeçalho
-* ----------------------------------------------------------------------
-    IF lt_item_key[] IS NOT INITIAL.
-
-      SELECT * FROM zi_mm_ce_inventory_head
-          FOR ALL ENTRIES IN @lt_item_key
-          WHERE DocumentId   EQ @lt_item_key-DocumentId
-          INTO TABLE @et_head.
-
-      IF sy-subrc EQ 0 .
-        SORT et_head BY DocumentId.
-      ENDIF.
-    ENDIF.
-
+  METHOD if_oo_adt_classrun~main.
   ENDMETHOD.
-
 ENDCLASS.

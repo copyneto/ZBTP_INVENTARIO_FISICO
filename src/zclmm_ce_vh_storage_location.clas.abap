@@ -27,7 +27,8 @@ ENDCLASS.
 
 
 
-CLASS zclmm_ce_vh_storage_location IMPLEMENTATION.
+CLASS ZCLMM_CE_VH_STORAGE_LOCATION IMPLEMENTATION.
+
 
   METHOD if_rap_query_provider~select.
 
@@ -129,6 +130,7 @@ CLASS zclmm_ce_vh_storage_location IMPLEMENTATION.
 
   ENDMETHOD.
 
+
   METHOD filter_search_expression.
 
     CHECK iv_search_expression IS NOT INITIAL.
@@ -158,6 +160,7 @@ CLASS zclmm_ce_vh_storage_location IMPLEMENTATION.
 
   ENDMETHOD.
 
+
   METHOD apply_sort.
 
     DATA: lt_data TYPE SORTED TABLE OF ty_cds WITH NON-UNIQUE KEY plant StorageLocation.
@@ -176,5 +179,4 @@ CLASS zclmm_ce_vh_storage_location IMPLEMENTATION.
              INTO CORRESPONDING FIELDS OF TABLE @ct_data.
 
   ENDMETHOD.
-
 ENDCLASS.

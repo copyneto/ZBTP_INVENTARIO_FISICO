@@ -27,8 +27,7 @@ ENDCLASS.
 
 
 
-
-CLASS zclmm_ce_vh_plant IMPLEMENTATION.
+CLASS ZCLMM_CE_VH_PLANT IMPLEMENTATION.
 
 
   METHOD if_rap_query_provider~select.
@@ -128,6 +127,27 @@ CLASS zclmm_ce_vh_plant IMPLEMENTATION.
 
   ENDMETHOD.
 
+
+  METHOD apply_sort.
+
+    DATA: lt_data TYPE SORTED TABLE OF ty_cds WITH NON-UNIQUE KEY plant.
+
+    CHECK it_sort_elements IS NOT INITIAL.
+
+    DATA(lt_sort) = VALUE string_table( FOR ls_sort_ IN it_sort_elements ( COND #( WHEN ls_sort_-descending IS INITIAL
+                                                                                   THEN ls_sort_-element_name
+                                                                                   ELSE |{ ls_sort_-element_name } DESCENDING| ) ) ).
+
+    DATA(lv_sort) = concat_lines_of( table = lt_sort[] sep = ',' ).
+
+    lt_data = ct_data.
+    SELECT * FROM @lt_data AS dados
+             ORDER BY (lv_sort)
+             INTO CORRESPONDING FIELDS OF TABLE @ct_data.
+
+  ENDMETHOD.
+
+
   METHOD filter_search_expression.
 
     CHECK iv_search_expression IS NOT INITIAL.
@@ -156,24 +176,4 @@ CLASS zclmm_ce_vh_plant IMPLEMENTATION.
     ENDLOOP.
 
   ENDMETHOD.
-
-  METHOD apply_sort.
-
-    DATA: lt_data TYPE SORTED TABLE OF ty_cds WITH NON-UNIQUE KEY plant.
-
-    CHECK it_sort_elements IS NOT INITIAL.
-
-    DATA(lt_sort) = VALUE string_table( FOR ls_sort_ IN it_sort_elements ( COND #( WHEN ls_sort_-descending IS INITIAL
-                                                                                   THEN ls_sort_-element_name
-                                                                                   ELSE |{ ls_sort_-element_name } DESCENDING| ) ) ).
-
-    DATA(lv_sort) = concat_lines_of( table = lt_sort[] sep = ',' ).
-
-    lt_data = ct_data.
-    SELECT * FROM @lt_data AS dados
-             ORDER BY (lv_sort)
-             INTO CORRESPONDING FIELDS OF TABLE @ct_data.
-
-  ENDMETHOD.
-
 ENDCLASS.

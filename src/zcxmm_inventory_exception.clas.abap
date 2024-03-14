@@ -20,7 +20,7 @@ ENDCLASS.
 
 
 
-CLASS zcxmm_inventory_exception IMPLEMENTATION.
+CLASS ZCXMM_INVENTORY_EXCEPTION IMPLEMENTATION.
 
 
   METHOD constructor ##ADT_SUPPRESS_GENERATION.
@@ -60,5 +60,4 @@ CLASS zcxmm_inventory_exception IMPLEMENTATION.
                                        attr4 = ls_return-message_v4 ).
 
   ENDMETHOD.
-
 ENDCLASS.

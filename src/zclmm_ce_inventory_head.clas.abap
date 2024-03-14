@@ -55,7 +55,7 @@ ENDCLASS.
 
 
 
-CLASS zclmm_ce_inventory_head IMPLEMENTATION.
+CLASS ZCLMM_CE_INVENTORY_HEAD IMPLEMENTATION.
 
 
   METHOD if_oo_adt_classrun~main.
@@ -140,6 +140,7 @@ CLASS zclmm_ce_inventory_head IMPLEMENTATION.
     ENDIF.
 
   ENDMETHOD.
+
 
   METHOD apply_aggregation.
 
@@ -330,5 +331,4 @@ CLASS zclmm_ce_inventory_head IMPLEMENTATION.
     ENDIF.
 
   ENDMETHOD.
-
 ENDCLASS.

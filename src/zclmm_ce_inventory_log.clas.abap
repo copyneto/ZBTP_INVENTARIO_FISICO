@@ -57,11 +57,7 @@ ENDCLASS.
 
 
 
-CLASS zclmm_ce_inventory_log IMPLEMENTATION.
-
-
-  METHOD if_oo_adt_classrun~main.
-  ENDMETHOD.
+CLASS ZCLMM_CE_INVENTORY_LOG IMPLEMENTATION.
 
 
   METHOD if_rap_query_provider~select.
@@ -142,6 +138,7 @@ CLASS zclmm_ce_inventory_log IMPLEMENTATION.
     ENDIF.
 
   ENDMETHOD.
+
 
   METHOD apply_aggregation.
 
@@ -344,4 +341,7 @@ CLASS zclmm_ce_inventory_log IMPLEMENTATION.
 
   ENDMETHOD.
 
+
+  METHOD if_oo_adt_classrun~main.
+  ENDMETHOD.
 ENDCLASS.

@@ -51,7 +51,7 @@ ENDCLASS.
 
 
 
-CLASS zclmm_remote_system IMPLEMENTATION.
+CLASS ZCLMM_REMOTE_SYSTEM IMPLEMENTATION.
 
 
   METHOD constructor.
@@ -208,5 +208,4 @@ CLASS zclmm_remote_system IMPLEMENTATION.
     ENDTRY.
 
   ENDMETHOD.
-
 ENDCLASS.

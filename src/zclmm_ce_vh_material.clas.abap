@@ -27,7 +27,7 @@ ENDCLASS.
 
 
 
-CLASS zclmm_ce_vh_material IMPLEMENTATION.
+CLASS ZCLMM_CE_VH_MATERIAL IMPLEMENTATION.
 
 
   METHOD if_rap_query_provider~select.
@@ -127,6 +127,7 @@ CLASS zclmm_ce_vh_material IMPLEMENTATION.
 
   ENDMETHOD.
 
+
   METHOD filter_search_expression.
 
     CHECK iv_search_expression IS NOT INITIAL.
@@ -157,6 +158,7 @@ CLASS zclmm_ce_vh_material IMPLEMENTATION.
 
   ENDMETHOD.
 
+
   METHOD apply_sort.
 
     DATA: lt_data TYPE SORTED TABLE OF ty_cds WITH NON-UNIQUE KEY material.
@@ -175,5 +177,4 @@ CLASS zclmm_ce_vh_material IMPLEMENTATION.
              INTO CORRESPONDING FIELDS OF TABLE @ct_data.
 
   ENDMETHOD.
-
 ENDCLASS.

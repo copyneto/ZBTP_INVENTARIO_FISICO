@@ -27,7 +27,9 @@ ENDCLASS.
 
 
 
-CLASS zclmm_ce_vh_company IMPLEMENTATION.
+CLASS ZCLMM_CE_VH_COMPANY IMPLEMENTATION.
+
+
   METHOD if_rap_query_provider~select.
 
     DATA: lt_data TYPE ty_t_data,
@@ -124,6 +126,7 @@ CLASS zclmm_ce_vh_company IMPLEMENTATION.
     ENDIF.
   ENDMETHOD.
 
+
   METHOD filter_search_expression.
 
     CHECK iv_search_expression IS NOT INITIAL.
@@ -153,6 +156,7 @@ CLASS zclmm_ce_vh_company IMPLEMENTATION.
 
   ENDMETHOD.
 
+
   METHOD apply_sort.
 
     DATA: lt_data TYPE SORTED TABLE OF ty_cds WITH NON-UNIQUE KEY companycode.
@@ -171,5 +175,4 @@ CLASS zclmm_ce_vh_company IMPLEMENTATION.
              INTO CORRESPONDING FIELDS OF TABLE @ct_data.
 
   ENDMETHOD.
-
 ENDCLASS.
